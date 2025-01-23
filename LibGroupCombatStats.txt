@@ -1,0 +1,22 @@
+## Title: LibGroupCombatStats
+## Description: a library for sharing and receiving DPS & Ult data
+## Version: dev
+## Author: |c76c3f4@m00nyONE|r
+## APIVersion: 101044
+## AddOnVersion: 00000000
+## IsLibrary: true
+## SavedVariables: LibGroupCombatStatsSV
+## DependsOn: LibCombat>=54
+## OptionalDependsOn: LibDebugLogger>=180 LibGroupBroadcast>=1
+####### LibAddonMenu-2.0>=32
+
+
+# Core Library
+LibGroupCombatStats.lua
+
+
+# tests
+test/mock.lua
+test/ult.lua
+test/dps.lua
+

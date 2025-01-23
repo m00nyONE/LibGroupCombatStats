@@ -1,0 +1,9 @@
+## Title: ExampleAddon
+## Description: An example addon for LibGroupCombatStats
+## Version: 001
+## Author: |c76c3f4@m00nyONE|r
+## APIVersion: 101044
+## AddOnVersion: 0000001
+## DependsOn: LibGroupCombatStats>=20250101
+
+example_addon.lua
