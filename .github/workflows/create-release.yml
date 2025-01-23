@@ -55,15 +55,14 @@ jobs:
           makeLatest: true
 
       - name: Send to ESOUI
-        if: false
         env:
           ESOUI_API_KEY: ${{ secrets.ESOUI_API_KEY }}
-          ADDON_ID: ---
+          ADDON_ID: 4024
         run: |
           curl -X POST \
             -H "x-api-token: $ESOUI_API_KEY" \
             -F "id=${ADDON_ID}" \
             -F "version=${{ env.BUILD_DATE_WITH_DOT }}" \
-            -F "updatefile=@HodorReflexes-${{ env.BUILD_DATE_WITH_HYPHEN }}.zip" \
+            -F "updatefile=@${{ env.REPO_NAME }}-${{ env.BUILD_DATE_WITH_HYPHEN }}.zip" \
             -F "changelog=$(cat CHANGELOG.md)" \
             https://api.esoui.com/addons/update
