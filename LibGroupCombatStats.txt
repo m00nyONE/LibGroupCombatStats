@@ -5,7 +5,6 @@
 ## APIVersion: 101044
 ## AddOnVersion: 00000000
 ## IsLibrary: true
-## SavedVariables: LibGroupCombatStatsSV
 ## DependsOn: LibCombat>=54
 ## OptionalDependsOn: LibDebugLogger>=180 LibGroupBroadcast>=1
 ####### LibAddonMenu-2.0>=32
