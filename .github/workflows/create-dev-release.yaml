@@ -54,6 +54,7 @@ jobs:
           tag: "${{ env.BUILD_DATE_WITH_DOT }}-dev"
           artifacts: "${{ env.REPO_NAME }}-${{ env.BUILD_DATE_WITH_HYPHEN }}-dev.zip"
           artifactContentType: application/zip
+          bodyFile: CHANGELOG.md
           allowUpdates: true
           makeLatest: true
           prerelease: true

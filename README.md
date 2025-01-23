@@ -135,6 +135,26 @@ hpsData = {
 ## API Functions
 The following API functions are available through the `lgcs` object:
 
+### `lgcs:Iterate() / pairs(lgcs)`
+It is possible to iterate over the internal groupStats table with `pairs(lgcs)` or `lgcs:Iterate()`.
+
+Returns:
+`iterator`
+
+Example:
+```lua
+for unitTag, stats in lgcs:Iterate() do
+  d(unitTag)
+  d(stats)
+end
+
+for unitTag, stats in pairs(lgcs) do
+  d(unitTag)
+  d(stats)
+end 
+```
+
+
 ### `lgcs:GetGroupStats()`
 Retrieves all group stats as a table.
 
@@ -183,7 +203,7 @@ end
 
 ---
 
-### `lgcs:GetGroupSize()`
+### `lgcs:GetGroupSize() / #lgcs`
 Retrieves the number of group members with available stats.
 
 #### Returns:
@@ -193,6 +213,9 @@ Example:
 ```lua
 local groupSize = lgcs:GetGroupSize()
 d("Group size: " .. groupSize)
+
+local groupSizeViaMetatableMethod = #lgcs
+d("Group size: " .. groupSizeViaMetatableMethod)
 ```
 
 ---
