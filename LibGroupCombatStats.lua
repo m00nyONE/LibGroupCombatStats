@@ -4,7 +4,7 @@
     Usage:
         - register your addon by calling:
             local lgcs = LibGroupCombatStats.RegisterAddon("addonName", {"ULT", "DPS", "HPS"})
-        - use the newly created lgcs object to interact with the library eighter by defining callbacks or by directly querrying the library with API calls
+        - use the newly created lgcs object to interact with the library either by defining callbacks or by directly querrying the library with API calls
         - define callbacks:
             lgcs:RegisterForEvent(EVENT_NAME, callback)
             the following events are available:
