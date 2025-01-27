@@ -150,6 +150,21 @@ local ULT_ACTIVATED_SET_LIST = {
         link = "|H0:item:187028:364:50:0:0:0:2:0:0:0:0:0:0:0:1:0:0:1:0:0:0|h|h",
         minEquipped = 3, -- we assume player has full set if he wears at least 3 items (2 can be on backbar)
     },
+    {
+        name = "cryptcanon",
+        link = "|H0:item:194509:364:50:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h",
+        minEquipped = 1,
+    },
+    {
+      name = "MA", -- master architect
+      link = "|H0:item:124294:362:50:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h",
+      minEquipped = 3,
+    },
+    {
+      name = "WM", -- warmachine
+      link = "|H0:item:124112:362:50:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h",
+      minEquipped = 3,
+    },
 }
 --- export set list, so it can be used to map the ultActivatedSetID to a real set
 lib.ULT_ACTIVATED_SET_LIST = ULT_ACTIVATED_SET_LIST
@@ -647,13 +662,18 @@ function player.updatePlayerSlottedUlts()
 
     LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, "player", playerStats.ult)
 end
+function player.updatePlayerUltimateCost()
+    playerStats.ult.ult1Cost = GetAbilityCost(playerStats.ult.ult1ID)
+    playerStats.ult.ult2Cost = GetAbilityCost(playerStats.ult.ult2ID)
+    LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, "player", playerStats.ult)
+end
 function player.updatePlayerUltActivatedSets()
     -- reset values
     playerStats.ult.ultActivatedSetID = 0
 
     -- populate values
     for id, set in ipairs(ULT_ACTIVATED_SET_LIST) do
-        local _, _, _, nonPerfectedNum, _, _, perfectedNum = GetItemLinkSetInfo(set.link, true)
+        local _, _, _, nonPerfectedNum, _, _id, perfectedNum = GetItemLinkSetInfo(set.link, true)
         local num = nonPerfectedNum + (perfectedNum or 0)
 
         if num >= set.minEquipped then
@@ -666,6 +686,7 @@ end
 function player.registerPlayerStatsUpdateFunctions()
     combat.Register()
     EM:RegisterForUpdate(lib.name .. "_ultValueUpdate", PLAYER_ULT_VALUE_UPDATE_INTERVAL, player.updatePlayerUltValue)
+    EM:RegisterForUpdate(lib.name .. "_ultCostUpdate", PLAYER_ULT_VALUE_UPDATE_INTERVAL, player.updatePlayerUltimateCost)
     EM:RegisterForUpdate(lib.name .. "_dpsUpdate", PLAYER_DPS_UPDATE_INTERVAL, player.updatePlayerDps)
     EM:RegisterForUpdate(lib.name .. "_hpsUpdate", PLAYER_HPS_UPDATE_INTERVAL, player.updatePlayerHps)
     EM:RegisterForEvent(lib.name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED, player.updatePlayerSlottedUlts)
@@ -675,6 +696,7 @@ end
 function player.unregisterPlayerStatsUpdateFunctions()
     combat.Unregister()
     EM:UnregisterForUpdate(lib.name .. "_ultValueUpdate")
+    EM:UnregisterForUpdate(lib.name .. "_ultCostUpdate")
     EM:UnregisterForUpdate(lib.name .. "_dpsUpdate")
     EM:UnregisterForUpdate(lib.name .. "_hpsUpdate")
     EM:UnregisterForEvent(lib.name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED)
