@@ -900,7 +900,7 @@ local playerUltTypeObservableTable = ObservableTable:New(onDelayedUltTypeChange,
 })
 -- writes to playerUltTypeObservableTable to trigger the onDelayedUltTypeChange
 local function onPlayerUltTypeUpdate(unitTag, _)
-    if unitTag ~= "player" then return end
+    if unitTag ~= localPlayer then return end
     playerUltTypeObservableTable.lastChange = GetGameTimeMilliseconds()
 end
 
