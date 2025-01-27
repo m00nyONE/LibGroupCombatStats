@@ -4,7 +4,8 @@
 **LibGroupCombatStats** is a library designed for Elder Scrolls Online (ESO) addons to provide group combat statistics such as damage per second (DPS), healing per second (HPS), and ultimate (ULT) status updates. It enables developers to register their addons to receive combat data, broadcast statistics, and interact with group and player-specific stats.
 
 ## Dependencies
-- LibGroupBroadcast by @sirinsidiator
+- LibCombat - by @Solinur
+- LibGroupBroadcast ( under development ) - by @sirinsidiator
 
 ## Key Features
 - **Observable Data**: Automatically tracks changes in combat stats and triggers callbacks when updates occur.
