@@ -884,21 +884,6 @@ local function broadcastPlayerUltType()
     LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE, localPlayer, data)
 end
 
-local function registerPlayerBroadcastFunctions()
-    EM:RegisterForUpdate(lib.name .. "_SendDps", PLAYER_DPS_SEND_INTERVAL,broadcastPlayerDps)
-    EM:RegisterForUpdate(lib.name .. "_SendHps", PLAYER_HPS_SEND_INTERVAL, broadcastPlayerHps)
-    EM:RegisterForUpdate(lib.name .. "_SendUltValue", PLAYER_ULT_VALUE_SEND_INTERVAL, broadcastPlayerUltValue)
-    EM:RegisterForUpdate(lib.name .. "_SendUltType", PLAYER_ULT_TYPE_SEND_INTERVAL, broadcastPlayerUltType)
-    Log("events", LOG_LEVEL_DEBUG, "registered periodic playerBroadcast functions")
-end
-local function unregisterPlayerBroadcastFunctions()
-    EM:UnregisterForUpdate(lib.name .. "_SendDps")
-    EM:UnregisterForUpdate(lib.name .. "_SendHps")
-    EM:UnregisterForUpdate(lib.name .. "_SendUltValue")
-    EM:UnregisterForUpdate(lib.name .. "_SendUltType")
-    Log("events", LOG_LEVEL_DEBUG, "unregistered periodic playerBroadcast functions")
-end
-
 
 --- on demand sent broadcast messages
 local function onDelayedUltTypeChange(_)
@@ -909,25 +894,51 @@ local function onDelayedUltTypeChange(_)
     -- broadcast ultType data
     broadcastPlayerUltType()
 end
-
 -- this ObservableTable is created to have a callback function waiting on further changes before broadcasting to avoid sending multiple messages when swapping loadouts
 local playerUltTypeObservableTable = ObservableTable:New(onDelayedUltTypeChange, 2000, {
     lastChange = GetGameTimeMilliseconds(),
 })
-
 -- writes to playerUltTypeObservableTable to trigger the onDelayedUltTypeChange
 local function onPlayerUltTypeUpdate(unitTag, _)
     if unitTag ~= "player" then return end
     playerUltTypeObservableTable.lastChange = GetGameTimeMilliseconds()
 end
 
-local function registerForUltTypeChange()
-    LocalEM:RegisterCallback(EVENT_PLAYER_ULT_TYPE_UPDATE, onPlayerUltTypeUpdate)
-    Log("events", LOG_LEVEL_DEBUG, "registered for async UltType changes")
+
+--- enable / disable broadcasting of stats
+local function disablePlayerBroadcastDPS()
+    EM:UnregisterForUpdate(lib_name .. "_SendDps") -- unregister periodic dps broadcast
+
+    Log("events", LOG_LEVEL_DEBUG, "DPS broadcast disabled")
 end
-local function unregisterForUltTypeChange()
-    LocalEM:UnregisterCallback(EVENT_PLAYER_ULT_TYPE_UPDATE, onPlayerUltTypeUpdate)
-    Log("events", LOG_LEVEL_DEBUG, "unregistered from async UltType changes")
+local function enablePlayerBroadcastDPS()
+    EM:RegisterForUpdate(lib_name .. "_SendDps", PLAYER_DPS_SEND_INTERVAL,broadcastPlayerDps) -- register periodic dps broadcast
+
+    Log("events", LOG_LEVEL_DEBUG, "DPS broadcast enabled")
+end
+local function disablePlayerBroadcastHPS()
+    EM:UnregisterForUpdate(lib_name .. "_SendHps")  -- unregister periodic hps broadcast
+
+    Log("events", LOG_LEVEL_DEBUG, "HPS broadcast disabled")
+end
+local function enablePlayerBroadcastHPS()
+    EM:RegisterForUpdate(lib_name .. "_SendHps", PLAYER_HPS_SEND_INTERVAL, broadcastPlayerHps) -- register periodic hps broadcast
+
+    Log("events", LOG_LEVEL_DEBUG, "HPS broadcast enabled")
+end
+local function disablePlayerBroadcastULT()
+    EM:UnregisterForUpdate(lib_name .. "_SendUltValue") -- unregister periodic ultValue broadcast
+    EM:UnregisterForUpdate(lib_name .. "_SendUltType") -- unregister periodic ultType broadcast
+    LocalEM:UnregisterCallback(EVENT_PLAYER_ULT_TYPE_UPDATE, onPlayerUltTypeUpdate) -- unregister async ultType broadcast
+
+    Log("events", LOG_LEVEL_DEBUG, "ULT broadcast disabled")
+end
+local function enablePlayerBroadcastULT()
+    EM:RegisterForUpdate(lib_name .. "_SendUltValue", PLAYER_ULT_VALUE_SEND_INTERVAL, broadcastPlayerUltValue) -- register periodic ultValue broadcast
+    EM:RegisterForUpdate(lib_name .. "_SendUltType", PLAYER_ULT_TYPE_SEND_INTERVAL, broadcastPlayerUltType) -- register periodic ultType broadcast
+    LocalEM:RegisterCallback(EVENT_PLAYER_ULT_TYPE_UPDATE, onPlayerUltTypeUpdate) -- register async ultType broadcast
+
+    Log("events", LOG_LEVEL_DEBUG, "ULT broadcast enabled")
 end
 
 
@@ -1029,8 +1040,21 @@ function lib.RegisterAddon(addonName, neededStats)
 
     _registeredAddons[addonName] = true
     for _, stat in ipairs(neededStats) do
+        if not _statsShared[stat] then
+            if stat == "DPS" then
+                disablePlayerBroadcastDPS()
+                enablePlayerBroadcastDPS()
+            elseif stat == "HPS" then
+                disablePlayerBroadcastHPS()
+                enablePlayerBroadcastHPS()
+            elseif stat == "ULT" then
+                disablePlayerBroadcastULT()
+                enablePlayerBroadcastULT()
+            end
+            Log("debug", LOG_LEVEL_DEBUG, addonName .. " requested " .. stat)
+        end
+
         _statsShared[stat] = true
-        Log("main", LOG_LEVEL_DEBUG, stat, " enabled")
     end
 
     Log("debug", LOG_LEVEL_INFO, "Addon " .. addonName .. " registered.")
@@ -1048,14 +1072,6 @@ local function onPlayerActivated()
     -- register group update events
     unregisterGroupEvents()
     registerGroupEvents()
-
-    --register broadcastFunctions
-    unregisterPlayerBroadcastFunctions()
-    registerPlayerBroadcastFunctions()
-
-    -- register on demand broadcast functions
-    unregisterForUltTypeChange()
-    registerForUltTypeChange()
 
     -- register update functions for values
     player.unregisterPlayerStatsUpdateFunctions()
