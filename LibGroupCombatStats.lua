@@ -32,8 +32,11 @@ local lib = {
     name = "LibGroupCombatStats",
     version = "dev",
 }
-local lib_debug = true
-_G[lib.name] = lib
+local lib_debug = false
+local lib_name = lib.name
+local lib_version = lib.version
+_G[lib_name] = lib
+
 local EM = EVENT_MANAGER
 local LocalEM = ZO_CallbackObject:New()
 local _registeredAddons = {}
@@ -53,7 +56,7 @@ local LOG_LEVEL_DEBUG = "D"
 local LOG_LEVEL_VERBOSE = "V"
 
 if LibDebugLogger then
-    mainLogger = LibDebugLogger.Create(lib.name)
+    mainLogger = LibDebugLogger.Create(lib_name)
 
     LOG_LEVEL_ERROR = LibDebugLogger.LOG_LEVEL_ERROR
     LOG_LEVEL_WARNING = LibDebugLogger.LOG_LEVEL_WARNING
@@ -119,12 +122,9 @@ local function extractNumber(data, size)
 end
 
 
---- often used variables
-local PLAYER_CHARACTER_NAME = GetUnitName("player")
-local PLAYER_DISPLAY_NAME = GetUnitDisplayName("player")
-
-
 --- constants
+local localPlayer = "player"
+
 local MESSAGE_ID_ULTTYPE = 10
 local MESSAGE_ID_ULTVALUE = 11
 local MESSAGE_ID_DPS = 12
@@ -135,6 +135,7 @@ local PLAYER_DPS_UPDATE_INTERVAL = 1000
 local PLAYER_HPS_UPDATE_INTERVAL = 1000
 
 local PLAYER_ULT_TYPE_SEND_INTERVAL = 15000
+local PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY = 1000
 local PLAYER_ULT_VALUE_SEND_INTERVAL = 2000
 local PLAYER_DPS_SEND_INTERVAL = 2000
 local PLAYER_HPS_SEND_INTERVAL = 2000
@@ -168,6 +169,11 @@ local ULT_ACTIVATED_SET_LIST = {
 }
 --- export set list, so it can be used to map the ultActivatedSetID to a real set
 lib.ULT_ACTIVATED_SET_LIST = ULT_ACTIVATED_SET_LIST
+
+
+--- often used variables
+local PLAYER_CHARACTER_NAME = GetUnitName(localPlayer)
+local PLAYER_DISPLAY_NAME = GetUnitDisplayName(localPlayer)
 
 
 --- exported constants
@@ -291,14 +297,14 @@ end
 -- groupStats base table containing all collected data
 local groupStats = {
     [PLAYER_CHARACTER_NAME] = {
-        tag = "player",
+        tag = localPlayer,
         name = PLAYER_CHARACTER_NAME,
         displayName = PLAYER_DISPLAY_NAME,
         isPlayer = true,
         --isOnline = true,
 
         ult = ObservableTable:New(function(data)
-            LocalEM:FireCallbacks(EVENT_PLAYER_ULT_UPDATE, "player", data)
+            LocalEM:FireCallbacks(EVENT_PLAYER_ULT_UPDATE, localPlayer, data)
         end, 10, {
             ultValue = 0,
             ult1ID = 0,
@@ -309,7 +315,7 @@ local groupStats = {
         }),
 
         dps = ObservableTable:New(function(data)
-            LocalEM:FireCallbacks(EVENT_PLAYER_DPS_UPDATE, "player", data)
+            LocalEM:FireCallbacks(EVENT_PLAYER_DPS_UPDATE, localPlayer, data)
         end, 10, {
             dmgType = 0,
             dmg = 0,
@@ -317,7 +323,7 @@ local groupStats = {
         }),
 
         hps = ObservableTable:New(function(data)
-            LocalEM:FireCallbacks(EVENT_PLAYER_HPS_UPDATE, "player", data)
+            LocalEM:FireCallbacks(EVENT_PLAYER_HPS_UPDATE, localPlayer, data)
         end, 10, {
             overheal = 0,
             hps = 0,
@@ -516,7 +522,7 @@ end
 --- Combat extension ( stolen from HodorReflexes - thanks andy.s <3 )
 local LC = LibCombat
 local combat = {}
-local LIBCOMBAT_CALLBACK_NAME = lib.name .. "_Combat"
+local LIBCOMBAT_CALLBACK_NAME = lib_name .. "_Combat"
 
 local combatData = {
     DPSOut = 0,
@@ -609,8 +615,8 @@ end
 --- update player values
 local player = {}
 function player.updatePlayerUltValue()
-    playerStats.ult.ultValue = zo_max(0, zo_min(500, GetUnitPower("player", POWERTYPE_ULTIMATE)))
-    LocalEM:FireCallbacks(EVENT_PLAYER_ULT_VALUE_UPDATE, "player", playerStats.ult)
+    playerStats.ult.ultValue = zo_max(0, zo_min(500, GetUnitPower(localPlayer, POWERTYPE_ULTIMATE)))
+    LocalEM:FireCallbacks(EVENT_PLAYER_ULT_VALUE_UPDATE, localPlayer, playerStats.ult)
 end
 function player.updatePlayerDps()
     local dmgType = 0
@@ -660,12 +666,12 @@ function player.updatePlayerSlottedUlts()
     playerStats.ult.ult1Cost = GetAbilityCost(playerStats.ult.ult1ID)
     playerStats.ult.ult2Cost = GetAbilityCost(playerStats.ult.ult2ID)
 
-    LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, "player", playerStats.ult)
+    LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
 end
 function player.updatePlayerUltimateCost()
     playerStats.ult.ult1Cost = GetAbilityCost(playerStats.ult.ult1ID)
     playerStats.ult.ult2Cost = GetAbilityCost(playerStats.ult.ult2ID)
-    LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, "player", playerStats.ult)
+    LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
 end
 function player.updatePlayerUltActivatedSets()
     -- reset values
@@ -681,27 +687,27 @@ function player.updatePlayerUltActivatedSets()
         end
     end
 
-    LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, "player", playerStats.ult)
-end
-function player.registerPlayerStatsUpdateFunctions()
-    combat.Register()
-    EM:RegisterForUpdate(lib.name .. "_ultValueUpdate", PLAYER_ULT_VALUE_UPDATE_INTERVAL, player.updatePlayerUltValue)
-    EM:RegisterForUpdate(lib.name .. "_ultCostUpdate", PLAYER_ULT_VALUE_UPDATE_INTERVAL, player.updatePlayerUltimateCost)
-    EM:RegisterForUpdate(lib.name .. "_dpsUpdate", PLAYER_DPS_UPDATE_INTERVAL, player.updatePlayerDps)
-    EM:RegisterForUpdate(lib.name .. "_hpsUpdate", PLAYER_HPS_UPDATE_INTERVAL, player.updatePlayerHps)
-    EM:RegisterForEvent(lib.name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED, player.updatePlayerSlottedUlts)
-    EM:RegisterForEvent(lib.name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE, player.updatePlayerUltActivatedSets)
-    Log("events", LOG_LEVEL_DEBUG, "playerStatsUpdate functions registered")
+    LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
 end
 function player.unregisterPlayerStatsUpdateFunctions()
     combat.Unregister()
-    EM:UnregisterForUpdate(lib.name .. "_ultValueUpdate")
-    EM:UnregisterForUpdate(lib.name .. "_ultCostUpdate")
-    EM:UnregisterForUpdate(lib.name .. "_dpsUpdate")
-    EM:UnregisterForUpdate(lib.name .. "_hpsUpdate")
-    EM:UnregisterForEvent(lib.name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED)
-    EM:UnregisterForEvent(lib.name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE)
+    EM:UnregisterForUpdate(lib_name .. "_ultValueUpdate")
+    EM:UnregisterForUpdate(lib_name .. "_ultCostUpdate")
+    EM:UnregisterForUpdate(lib_name .. "_dpsUpdate")
+    EM:UnregisterForUpdate(lib_name .. "_hpsUpdate")
+    EM:UnregisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED)
+    EM:UnregisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE)
     Log("events", LOG_LEVEL_DEBUG, "playerStatsUpdate functions unregistered")
+end
+function player.registerPlayerStatsUpdateFunctions()
+    combat.Register()
+    EM:RegisterForUpdate(lib_name .. "_ultValueUpdate", PLAYER_ULT_VALUE_UPDATE_INTERVAL, player.updatePlayerUltValue)
+    EM:RegisterForUpdate(lib_name .. "_ultCostUpdate", PLAYER_ULT_VALUE_UPDATE_INTERVAL, player.updatePlayerUltimateCost)
+    EM:RegisterForUpdate(lib_name .. "_dpsUpdate", PLAYER_DPS_UPDATE_INTERVAL, player.updatePlayerDps)
+    EM:RegisterForUpdate(lib_name .. "_hpsUpdate", PLAYER_HPS_UPDATE_INTERVAL, player.updatePlayerHps)
+    EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED, player.updatePlayerSlottedUlts)
+    EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE, player.updatePlayerUltActivatedSets)
+    Log("events", LOG_LEVEL_DEBUG, "playerStatsUpdate functions registered")
 end
 
 
@@ -793,14 +799,15 @@ local function decodeHps(data)
     return result
 end
 
-local function toNewToProcessWarning()
-    Log("events", LOG_LEVEL_WARNING, "someone is trying to send you newer data than you can process with " .. lib.name .. ": " .. lib.version .. ". Please check if there is a newer version available and install it")
-end
 
 --- receiving broadcast callbacks
+local function toNewToProcessWarning()
+    Log("events", LOG_LEVEL_WARNING, "someone is trying to send you newer data than you can process with " .. lib_name .. ": " .. lib_version .. ". Please check if there is a newer version available and install it")
+end
+
 local broadcast = {}
 local function onMessageUltTypeUpdateReceived(unitTag, data)
-    if AreUnitsEqual(unitTag, 'player') then return end
+    if AreUnitsEqual(unitTag, localPlayer) then return end
 
     local result = decodeUltType(data)
     local charName = GetUnitName(unitTag)
@@ -813,7 +820,7 @@ local function onMessageUltTypeUpdateReceived(unitTag, data)
     LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_ULT_TYPE, unitTag, result)
 end
 local function onMessageUltValueUpdateReceived(unitTag, data)
-    if AreUnitsEqual(unitTag, 'player') then return end
+    if AreUnitsEqual(unitTag, localPlayer) then return end
 
     local result = decodeUltValue(data)
     local charName = GetUnitName(unitTag)
@@ -822,7 +829,7 @@ local function onMessageUltValueUpdateReceived(unitTag, data)
     LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_ULT_VALUE, unitTag, result)
 end
 local function onMessageDpsUpdateReceived(unitTag, data)
-    if AreUnitsEqual(unitTag, 'player') then return end
+    if AreUnitsEqual(unitTag, localPlayer) then return end
 
     local result = decodeDps(data)
     local charName = GetUnitName(unitTag)
@@ -833,7 +840,7 @@ local function onMessageDpsUpdateReceived(unitTag, data)
     LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_DPS, unitTag, result)
 end
 local function onMessageHpsUpdateReceived(unitTag, data)
-    if AreUnitsEqual(unitTag, 'player') then return end
+    if AreUnitsEqual(unitTag, localPlayer) then return end
 
     local result = decodeHps(data)
     local charName = GetUnitName(unitTag)
@@ -849,27 +856,26 @@ local function onMessageDpsUpdateReceived_V2(unitTag, data) toNewToProcessWarnin
 local function onMessageHpsUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
 
 
-
 --- periodically sent broadcast messages
 local function broadcastPlayerDps()
     if not _statsShared["DPS"] then return end
     local data = encodeDps(playerStats.dps.dmgType, playerStats.dps.dmg, playerStats.dps.dps)
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_DPS, "player", data)
+    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_DPS, localPlayer, data)
 end
 local function broadcastPlayerHps()
     if not _statsShared["HPS"] then return end
     local data = encodeHps(playerStats.hps.overheal, playerStats.hps.hps)
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_HPS, "player", data)
+    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_HPS, localPlayer, data)
 end
 local function broadcastPlayerUltValue()
     if not _statsShared["ULT"] then return end
     local data = encodeUltValue(playerStats.ult.ultValue)
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE, "player", data)
+    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE, localPlayer, data)
 end
 local function broadcastPlayerUltType()
     if not _statsShared["ULT"] then return end
     local data = encodeUltType(playerStats.ult.ult1ID, playerStats.ult.ult2ID, playerStats.ult.ult1Cost, playerStats.ult.ult2Cost, playerStats.ult.ultActivatedSetID)
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE, "player", data)
+    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE, localPlayer, data)
 end
 
 local function registerPlayerBroadcastFunctions()
@@ -891,8 +897,8 @@ end
 --- on demand sent broadcast messages
 local function onDelayedUltTypeChange(_)
     -- reset interval for ultType sharing
-    EM:UnregisterForUpdate(lib.name .. "_SendUltType")
-    EM:RegisterForUpdate(lib.name .. "_SendUltType", PLAYER_ULT_TYPE_SEND_INTERVAL, broadcastPlayerUltType)
+    EM:UnregisterForUpdate(lib_name .. "_SendUltType")
+    EM:RegisterForUpdate(lib_name .. "_SendUltType", PLAYER_ULT_TYPE_SEND_INTERVAL, broadcastPlayerUltType)
 
     -- broadcast ultType data
     broadcastPlayerUltType()
@@ -929,7 +935,7 @@ local function OnGroupChange()
 
         if IsUnitPlayer(tag) then
 
-            local isPlayer = AreUnitsEqual(tag, 'player')
+            local isPlayer = AreUnitsEqual(tag, localPlayer)
             local characterName = GetUnitName(tag)
             _existingGroupCharacters[characterName] = true
 
@@ -969,10 +975,8 @@ local function OnGroupChange()
 
 
             end
-
             groupStats[characterName].tag = tag
             --groupStats[characterName].isOnline = IsUnitOnline(tag)
-
         end
     end
 
@@ -985,25 +989,25 @@ local function OnGroupChange()
         end
     end
 end
-local PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY = 1000
 local function OnGroupChangeDelayed()
     zo_callLater(OnGroupChange, 500) -- wait 500ms to avoid any race conditions
     zo_callLater(onDelayedUltTypeChange, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
 end
-local function registerGroupEvents()
-    EM:RegisterForEvent(lib.name, EVENT_GROUP_MEMBER_JOINED, OnGroupChangeDelayed)
-    EM:RegisterForEvent(lib.name, EVENT_GROUP_MEMBER_LEFT, OnGroupChangeDelayed)
-    EM:RegisterForEvent(lib.name, EVENT_GROUP_UPDATE, OnGroupChangeDelayed)
-    EM:RegisterForEvent(lib.name, EVENT_GROUP_MEMBER_CONNECTED_STATUS, OnGroupChangeDelayed)
-    Log("events", LOG_LEVEL_DEBUG, "group events registered")
-end
 local function unregisterGroupEvents()
-    EM:UnregisterForEvent(lib.name, EVENT_GROUP_MEMBER_JOINED)
-    EM:UnregisterForEvent(lib.name, EVENT_GROUP_MEMBER_LEFT)
-    EM:UnregisterForEvent(lib.name, EVENT_GROUP_UPDATE)
-    EM:UnregisterForEvent(lib.name, EVENT_GROUP_MEMBER_CONNECTED_STATUS)
+    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED)
+    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_LEFT)
+    EM:UnregisterForEvent(lib_name, EVENT_GROUP_UPDATE)
+    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_CONNECTED_STATUS)
     Log("events", LOG_LEVEL_DEBUG, "group events unregistered")
 end
+local function registerGroupEvents()
+    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED, OnGroupChangeDelayed)
+    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_LEFT, OnGroupChangeDelayed)
+    EM:RegisterForEvent(lib_name, EVENT_GROUP_UPDATE, OnGroupChangeDelayed)
+    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_CONNECTED_STATUS, OnGroupChangeDelayed)
+    Log("events", LOG_LEVEL_DEBUG, "group events registered")
+end
+
 
 --- exposed API Calls
 function lib.RegisterAddon(addonName, neededStats)
@@ -1023,7 +1027,7 @@ function lib.RegisterAddon(addonName, neededStats)
         Log("main", LOG_LEVEL_DEBUG, stat, " enabled")
     end
 
-    Log("debug", LOG_LEVEL_INFO, "Addon %s registered. Needs: %v", addonName, neededStats)
+    Log("debug", LOG_LEVEL_INFO, "Addon " .. addonName .. " registered.")
     return _CombatStatsObject:New()
 end
 
@@ -1032,9 +1036,10 @@ end
 local function onPlayerActivated()
     Log("debug", LOG_LEVEL_DEBUG, "onPlayerActivated called")
 
-    -- register group event tracker
+    -- trigger group update
     OnGroupChangeDelayed()
 
+    -- register group update events
     unregisterGroupEvents()
     registerGroupEvents()
 
@@ -1058,18 +1063,18 @@ end
 
 
 -- register the addon
-EM:RegisterForEvent(lib.name, EVENT_ADD_ON_LOADED, function(_, name)
-    if name ~= lib.name then return end
-    EM:UnregisterForEvent(lib.name, EVENT_ADD_ON_LOADED)
+EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
+    if name ~= lib_name then return end
+    EM:UnregisterForEvent(lib_name, EVENT_ADD_ON_LOADED)
 
     -- register onPlayerActivated callback
-    EM:UnregisterForEvent(lib.name, EVENT_PLAYER_ACTIVATED)
-    EM:RegisterForEvent(lib.name, EVENT_PLAYER_ACTIVATED, onPlayerActivated)
+    EM:UnregisterForEvent(lib_name, EVENT_PLAYER_ACTIVATED)
+    EM:RegisterForEvent(lib_name, EVENT_PLAYER_ACTIVATED, onPlayerActivated)
     Log("main", LOG_LEVEL_DEBUG, "Library initialized")
 
     SLASH_COMMANDS["/libGroupCombatStats"] = function(str)
         if str == "version" then
-            d(lib.version)
+            d(lib_version)
         end
     end
 end)
