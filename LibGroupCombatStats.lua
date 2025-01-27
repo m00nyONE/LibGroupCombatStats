@@ -39,6 +39,7 @@ _G[lib_name] = lib
 
 local EM = EVENT_MANAGER
 local LocalEM = ZO_CallbackObject:New()
+local strmatch = string.match
 local _registeredAddons = {}
 local _statsShared = {
     ["ULT"] = false,
@@ -268,11 +269,16 @@ function ObservableTable:New(onChangeCallback, fireAfterLastChangeMS, initTable)
         _onChangeCallback = onChangeCallback, -- User-provided callback function
         _fireAfterLastChangeMS = fireAfterLastChangeMS or 0, -- Delay in milliseconds before firing the callback
         _lastUpdated = 0, -- Timestamp of the last update (in milliseconds)
-        _eventId = "ObservableTable_" .. zo_random(0, 2^24) .. "_" .. zo_random(0, 2^24) .. "_" .. zo_random(0, 2^24) -- Unique update event name for this instance
+        _eventId = "" -- Unique update event name for this instance
     }
 
     -- Set the metatable for the new instance
-    return setmetatable(instance, self)
+    local newObservableTable = setmetatable(instance, self)
+
+    -- create unique _eventId by getting the address of the table
+    newObservableTable._eventId = "ObservableTable_" .. strmatch(tostring(newObservableTable), "0%x+")
+
+    return newObservableTable
 end
 -- Override __index to read values from the internal data storage
 -- @param key (string): The key being accessed
