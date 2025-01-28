@@ -633,13 +633,13 @@ function player.updatePlayerDps()
 
     if data.DPSOut == 0 then
         dmgType, dmg, dps = DAMAGE_UNKNOWN, 0, 0
-    end
-
-    local bossUnits, bossDamage, bossTime = combat.GetBossTargetDamage()
-    if bossUnits > 0 then
-        dmgType, dmg, dps = DAMAGE_BOSS, zo_floor(bossDamage / bossTime / 100), zo_floor(data.DPSOut / 1000)
     else
-        dmgType, dmg, dps = DAMAGE_TOTAL, zo_floor(combat.GetFullDamage() / 10000), zo_floor(data.DPSOut / 1000)
+        local bossUnits, bossDamage, bossTime = combat.GetBossTargetDamage()
+        if bossUnits > 0 then
+            dmgType, dmg, dps = DAMAGE_BOSS, zo_floor(bossDamage / bossTime / 100), zo_floor(data.DPSOut / 1000)
+        else
+            dmgType, dmg, dps = DAMAGE_TOTAL, zo_floor(combat.GetFullDamage() / 10000), zo_floor(data.DPSOut / 1000)
+        end
     end
 
     playerStats.dps.dmgType = dmgType
