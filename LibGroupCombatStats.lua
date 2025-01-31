@@ -619,12 +619,11 @@ end
 
 
 --- update player values
-local player = {}
-function player.updatePlayerUltValue()
+local function updatePlayerUltValue()
     playerStats.ult.ultValue = zo_max(0, zo_min(500, GetUnitPower(localPlayer, POWERTYPE_ULTIMATE)))
     LocalEM:FireCallbacks(EVENT_PLAYER_ULT_VALUE_UPDATE, localPlayer, playerStats.ult)
 end
-function player.updatePlayerDps()
+local function updatePlayerDps()
     local dmgType = 0
     local dmg = 0
     local dps = 0
@@ -646,7 +645,7 @@ function player.updatePlayerDps()
     playerStats.dps.dmg = dmg
     playerStats.dps.dps = dps
 end
-function player.updatePlayerHps()
+local function updatePlayerHps()
     local overheal = 0
     local hps = 0
 
@@ -659,7 +658,7 @@ function player.updatePlayerHps()
     playerStats.hps.overheal = zo_floor(data.HPSAOut / 1000)
     playerStats.hps.hps = zo_floor(data.HPSOut / 1000 )
 end
-function player.updatePlayerSlottedUlts()
+local function updatePlayerSlottedUlts()
     -- reset values
     playerStats.ult.ult1ID = 0
     playerStats.ult.ult2ID = 0
@@ -674,12 +673,12 @@ function player.updatePlayerSlottedUlts()
 
     LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
 end
-function player.updatePlayerUltimateCost()
+local function updatePlayerUltimateCost()
     playerStats.ult.ult1Cost = GetAbilityCost(playerStats.ult.ult1ID)
     playerStats.ult.ult2Cost = GetAbilityCost(playerStats.ult.ult2ID)
     LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
 end
-function player.updatePlayerUltActivatedSets()
+local function updatePlayerUltActivatedSets()
     -- reset values
     playerStats.ult.ultActivatedSetID = 0
 
@@ -695,7 +694,7 @@ function player.updatePlayerUltActivatedSets()
 
     LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
 end
-function player.unregisterPlayerStatsUpdateFunctions()
+local function unregisterPlayerStatsUpdateFunctions()
     combat.Unregister()
     EM:UnregisterForUpdate(lib_name .. "_ultValueUpdate")
     EM:UnregisterForUpdate(lib_name .. "_ultCostUpdate")
@@ -705,14 +704,14 @@ function player.unregisterPlayerStatsUpdateFunctions()
     EM:UnregisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE)
     Log("events", LOG_LEVEL_DEBUG, "playerStatsUpdate functions unregistered")
 end
-function player.registerPlayerStatsUpdateFunctions()
+local function registerPlayerStatsUpdateFunctions()
     combat.Register()
-    EM:RegisterForUpdate(lib_name .. "_ultValueUpdate", PLAYER_ULT_VALUE_UPDATE_INTERVAL, player.updatePlayerUltValue)
-    EM:RegisterForUpdate(lib_name .. "_ultCostUpdate", PLAYER_ULT_VALUE_UPDATE_INTERVAL, player.updatePlayerUltimateCost)
-    EM:RegisterForUpdate(lib_name .. "_dpsUpdate", PLAYER_DPS_UPDATE_INTERVAL, player.updatePlayerDps)
-    EM:RegisterForUpdate(lib_name .. "_hpsUpdate", PLAYER_HPS_UPDATE_INTERVAL, player.updatePlayerHps)
-    EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED, player.updatePlayerSlottedUlts)
-    EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE, player.updatePlayerUltActivatedSets)
+    EM:RegisterForUpdate(lib_name .. "_ultValueUpdate", PLAYER_ULT_VALUE_UPDATE_INTERVAL, updatePlayerUltValue)
+    EM:RegisterForUpdate(lib_name .. "_ultCostUpdate", PLAYER_ULT_VALUE_UPDATE_INTERVAL, updatePlayerUltimateCost)
+    EM:RegisterForUpdate(lib_name .. "_dpsUpdate", PLAYER_DPS_UPDATE_INTERVAL, updatePlayerDps)
+    EM:RegisterForUpdate(lib_name .. "_hpsUpdate", PLAYER_HPS_UPDATE_INTERVAL, updatePlayerHps)
+    EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED, updatePlayerSlottedUlts)
+    EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE, updatePlayerUltActivatedSets)
     Log("events", LOG_LEVEL_DEBUG, "playerStatsUpdate functions registered")
 end
 
@@ -811,7 +810,6 @@ local function toNewToProcessWarning()
     Log("events", LOG_LEVEL_WARNING, "someone is trying to send you newer data than you can process with " .. lib_name .. ": " .. lib_version .. ". Please check if there is a newer version available and install it")
 end
 
-local broadcast = {}
 local function onMessageUltTypeUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
@@ -912,6 +910,7 @@ local function disablePlayerBroadcastDPS()
     Log("events", LOG_LEVEL_DEBUG, "DPS broadcast disabled")
 end
 local function enablePlayerBroadcastDPS()
+    disablePlayerBroadcastDPS()
     EM:RegisterForUpdate(lib_name .. "_SendDps", PLAYER_DPS_SEND_INTERVAL,broadcastPlayerDps) -- register periodic dps broadcast
 
     Log("events", LOG_LEVEL_DEBUG, "DPS broadcast enabled")
@@ -922,6 +921,7 @@ local function disablePlayerBroadcastHPS()
     Log("events", LOG_LEVEL_DEBUG, "HPS broadcast disabled")
 end
 local function enablePlayerBroadcastHPS()
+    disablePlayerBroadcastHPS()
     EM:RegisterForUpdate(lib_name .. "_SendHps", PLAYER_HPS_SEND_INTERVAL, broadcastPlayerHps) -- register periodic hps broadcast
 
     Log("events", LOG_LEVEL_DEBUG, "HPS broadcast enabled")
@@ -934,6 +934,7 @@ local function disablePlayerBroadcastULT()
     Log("events", LOG_LEVEL_DEBUG, "ULT broadcast disabled")
 end
 local function enablePlayerBroadcastULT()
+    disablePlayerBroadcastULT()
     EM:RegisterForUpdate(lib_name .. "_SendUltValue", PLAYER_ULT_VALUE_SEND_INTERVAL, broadcastPlayerUltValue) -- register periodic ultValue broadcast
     EM:RegisterForUpdate(lib_name .. "_SendUltType", PLAYER_ULT_TYPE_SEND_INTERVAL, broadcastPlayerUltType) -- register periodic ultType broadcast
     LocalEM:RegisterCallback(EVENT_PLAYER_ULT_TYPE_UPDATE, onPlayerUltTypeUpdate) -- register async ultType broadcast
@@ -1042,13 +1043,10 @@ function lib.RegisterAddon(addonName, neededStats)
     for _, stat in ipairs(neededStats) do
         if not _statsShared[stat] then
             if stat == "DPS" then
-                disablePlayerBroadcastDPS()
                 enablePlayerBroadcastDPS()
             elseif stat == "HPS" then
-                disablePlayerBroadcastHPS()
                 enablePlayerBroadcastHPS()
             elseif stat == "ULT" then
-                disablePlayerBroadcastULT()
                 enablePlayerBroadcastULT()
             end
             Log("debug", LOG_LEVEL_DEBUG, addonName .. " requested " .. stat)
@@ -1074,17 +1072,17 @@ local function onPlayerActivated()
     registerGroupEvents()
 
     -- register update functions for values
-    player.unregisterPlayerStatsUpdateFunctions()
-    player.registerPlayerStatsUpdateFunctions()
+    unregisterPlayerStatsUpdateFunctions()
+    registerPlayerStatsUpdateFunctions()
 
     -- set player ult & sets
-    player.updatePlayerSlottedUlts()
-    player.updatePlayerUltActivatedSets()
+    updatePlayerSlottedUlts()
+    updatePlayerUltActivatedSets()
 
 end
 
 
--- register the addon
+--- register the addon
 EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
     if name ~= lib_name then return end
     EM:UnregisterForEvent(lib_name, EVENT_ADD_ON_LOADED)
