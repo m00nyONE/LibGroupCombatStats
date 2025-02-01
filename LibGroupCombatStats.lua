@@ -37,6 +37,10 @@ local lib_name = lib.name
 local lib_version = lib.version
 _G[lib_name] = lib
 
+local HPS = "HPS"
+local DPS = "DPS"
+local ULT = "ULT"
+
 local LGB = LibGroupBroadcast
 local EM = EVENT_MANAGER
 local LocalEM = ZO_CallbackObject:New()
@@ -44,9 +48,9 @@ local strmatch = string.match
 local _LGBProtocols = {}
 local _registeredAddons = {}
 local _statsShared = {
-    ["ULT"] = false,
-    ["DPS"] = false,
-    ["HPS"] = false,
+    [ULT] = false,
+    [DPS] = false,
+    [HPS] = false,
 }
 
 
@@ -846,62 +850,51 @@ local function onMessageHpsUpdateReceived_V2(unitTag, data) toNewToProcessWarnin
 
 --- periodically sent broadcast messages
 local function broadcastPlayerDps()
-    if not _statsShared["DPS"] then return end
+    if not _statsShared[DPS] then return end
 
-    _LGBProtocols[MESSAGE_ID_DPS]:Send({
+    local data = {
         dmgType = playerStats.dps.dmgType,
         dmg = playerStats.dps.dmg,
         dps = playerStats.dps.dps
-    })
+    }
 
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_DPS, localPlayer, {
-        dmgType = playerStats.dps.dmgType,
-        dmg = playerStats.dps.dmg,
-        dps = playerStats.dps.dps
-    })
+    _LGBProtocols[MESSAGE_ID_DPS]:Send(data)
+    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_DPS, localPlayer, data)
 end
 local function broadcastPlayerHps()
-    if not _statsShared["HPS"] then return end
+    if not _statsShared[HPS] then return end
 
-    _LGBProtocols[MESSAGE_ID_HPS]:Send({
+    local data = {
         overheal = playerStats.hps.overheal,
         hps = playerStats.hps.hps
-    })
+    }
 
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_HPS, localPlayer, {
-        overheal = playerStats.hps.overheal,
-        hps = playerStats.hps.hps
-    })
+    _LGBProtocols[MESSAGE_ID_HPS]:Send(data)
+    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_HPS, localPlayer, data)
 end
 local function broadcastPlayerUltValue()
-    if not _statsShared["ULT"] then return end
+    if not _statsShared[ULT] then return end
 
-    _LGBProtocols[MESSAGE_ID_ULTVALUE]:Send({
+    local data = {
         ultValue = zo_floor(playerStats.ult.ultValue / 2)
-    })
+    }
 
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE, localPlayer, {
-       ultValue = zo_floor(playerStats.ult.ultValue / 2)
-    })
+    _LGBProtocols[MESSAGE_ID_ULTVALUE]:Send(data)
+    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE, localPlayer, data)
 end
 local function broadcastPlayerUltType()
-    if not _statsShared["ULT"] then return end
+    if not _statsShared[ULT] then return end
 
-    _LGBProtocols[MESSAGE_ID_ULTTYPE]:Send({
+    local data = {
         ult1ID = playerStats.ult.ult1ID,
         ult2ID = playerStats.ult.ult2ID,
         ult1Cost = playerStats.ult.ult1Cost,
         ult2Cost = playerStats.ult.ult2Cost,
         ultActivatedSetID = playerStats.ult.ultActivatedSetID
-    })
+    }
 
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE, localPlayer, {
-        ult1ID = playerStats.ult.ult1ID,
-        ult2ID = playerStats.ult.ult2ID,
-        ult1Cost = playerStats.ult.ult1Cost,
-        ult2Cost = playerStats.ult.ult2Cost,
-        ultActivatedSetID = playerStats.ult.ultActivatedSetID
-    })
+    _LGBProtocols[MESSAGE_ID_ULTTYPE]:Send(data)
+    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE, localPlayer, data)
 end
 
 
@@ -1064,11 +1057,11 @@ function lib.RegisterAddon(addonName, neededStats)
     _registeredAddons[addonName] = true
     for _, stat in ipairs(neededStats) do
         if not _statsShared[stat] then
-            if stat == "DPS" then
+            if stat == DPS then
                 enablePlayerBroadcastDPS()
-            elseif stat == "HPS" then
+            elseif stat == HPS then
                 enablePlayerBroadcastHPS()
-            elseif stat == "ULT" then
+            elseif stat == ULT then
                 enablePlayerBroadcastULT()
             end
             Log("debug", LOG_LEVEL_DEBUG, addonName .. " requested " .. stat)
@@ -1150,7 +1143,6 @@ local function DeclareLGBProtocols()
     protocolUltType:AddField(LGB.CreateNumericField("ultActivatedSetID", {
         numBits = 4
     }))
-
     protocolUltType:Finalize(protocolOptions)
 
     local protocolUltValue = LGB:DeclareProtocol(MESSAGE_ID_ULTVALUE, "LibGroupCombatStats Ult Value Share")
