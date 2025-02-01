@@ -176,25 +176,6 @@ lib.EVENT_PLAYER_ULT_UPDATE = EVENT_PLAYER_ULT_UPDATE
 lib.EVENT_PLAYER_ULT_VALUE_UPDATE = EVENT_PLAYER_ULT_VALUE_UPDATE --- usually not needed
 lib.EVENT_PLAYER_ULT_TYPE_UPDATE = EVENT_PLAYER_ULT_TYPE_UPDATE --- usually not needed
 
---- Events based on broadcasts - these include raw data
-local EVENT_BROADCAST_RECEIVED_GROUP_DPS = "EVENT_BROADCAST_RECEIVED_GROUP_DPS"
-local EVENT_BROADCAST_RECEIVED_GROUP_HPS = "EVENT_BROADCAST_RECEIVED_GROUP_HPS"
-local EVENT_BROADCAST_RECEIVED_GROUP_ULT_VALUE = "EVENT_BROADCAST_RECEIVED_GROUP_ULT_VALUE"
-local EVENT_BROADCAST_RECEIVED_GROUP_ULT_TYPE = "EVENT_BROADCAST_RECEIVED_GROUP_ULT_TYPE"
-local EVENT_BROADCAST_SENT_PLAYER_DPS = "EVENT_BROADCAST_SENT_PLAYER_DPS"
-local EVENT_BROADCAST_SENT_PLAYER_HPS = "EVENT_BROADCAST_SENT_PLAYER_HPS"
-local EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE = "EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE"
-local EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE = "EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE"
-
-lib.EVENT_BROADCAST_RECEIVED_GROUP_DPS = EVENT_BROADCAST_RECEIVED_GROUP_DPS
-lib.EVENT_BROADCAST_RECEIVED_GROUP_HPS = EVENT_BROADCAST_RECEIVED_GROUP_HPS
-lib.EVENT_BROADCAST_RECEIVED_GROUP_ULT_VALUE = EVENT_BROADCAST_RECEIVED_GROUP_ULT_VALUE
-lib.EVENT_BROADCAST_RECEIVED_GROUP_ULT_TYPE = EVENT_BROADCAST_RECEIVED_GROUP_ULT_TYPE
-lib.EVENT_BROADCAST_SENT_PLAYER_DPS = EVENT_BROADCAST_SENT_PLAYER_DPS
-lib.EVENT_BROADCAST_SENT_PLAYER_HPS = EVENT_BROADCAST_SENT_PLAYER_HPS
-lib.EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE = EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE
-lib.EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE = EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE
-
 
 --- The ObservableTable allows for firing callbacks when values are updated
 local ObservableTable = {}
@@ -706,7 +687,6 @@ local function onMessageUltTypeUpdateReceived(unitTag, data)
     groupStats[charName].ult.ult1Cost = data.ult1Cost
     groupStats[charName].ult.ult2Cost = data.ult2Cost
     groupStats[charName].ult.ultActivatedSetID = data.ultActivatedSetID
-    LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_ULT_TYPE, unitTag, data)
 end
 local function onMessageUltValueUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
@@ -717,7 +697,6 @@ local function onMessageUltValueUpdateReceived(unitTag, data)
     data.ultValue = data.ultValue * 2
 
     groupStats[charName].ult.ultValue = data.ultValue
-    LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_ULT_VALUE, unitTag, data)
 end
 local function onMessageDpsUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
@@ -728,8 +707,6 @@ local function onMessageDpsUpdateReceived(unitTag, data)
     groupStats[charName].dps.dmgType = data.dmgType
     groupStats[charName].dps.dmg = data.dmg
     groupStats[charName].dps.dps = data.dps
-
-    LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_DPS, unitTag, data)
 end
 local function onMessageHpsUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
@@ -739,8 +716,6 @@ local function onMessageHpsUpdateReceived(unitTag, data)
 
     groupStats[charName].hps.overheal = data.overheal
     groupStats[charName].hps.hps = data.hps
-
-    LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_HPS, unitTag, data)
 end
 
 local function onMessageUltTypeUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
@@ -761,7 +736,6 @@ local function broadcastPlayerDps()
     }
 
     _LGBProtocols[MESSAGE_ID_DPS]:Send(data)
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_DPS, localPlayer, data)
 end
 local function broadcastPlayerHps()
     if not IsUnitGrouped(localPlayer) then return end
@@ -773,7 +747,6 @@ local function broadcastPlayerHps()
     }
 
     _LGBProtocols[MESSAGE_ID_HPS]:Send(data)
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_HPS, localPlayer, data)
 end
 local function broadcastPlayerUltValue()
     if not IsUnitGrouped(localPlayer) then return end
@@ -784,7 +757,6 @@ local function broadcastPlayerUltValue()
     }
 
     _LGBProtocols[MESSAGE_ID_ULTVALUE]:Send(data)
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE, localPlayer, data)
 end
 local function broadcastPlayerUltType()
     if not IsUnitGrouped(localPlayer) then return end
@@ -799,7 +771,6 @@ local function broadcastPlayerUltType()
     }
 
     _LGBProtocols[MESSAGE_ID_ULTTYPE]:Send(data)
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE, localPlayer, data)
 end
 
 
@@ -1018,7 +989,7 @@ local function DeclareLGBProtocols()
         minValue = 0,
         maxValue = 9999,
     }))
-    protocolDps:AddField(LGB.CreateNumericField("dps", {
+    protocolDps:AddField(CreateNumericField("dps", {
         minValue = 0,
         maxValue = 999,
     }))
@@ -1128,16 +1099,6 @@ if lib_debug then
             --logEvent(EVENT_PLAYER_ULT_UPDATE)
             --logEvent(EVENT_PLAYER_ULT_TYPE_UPDATE)
             --logEvent(EVENT_PLAYER_ULT_VALUE_UPDATE)
-
-            --logEvent(EVENT_BROADCAST_SENT_PLAYER_DPS)
-            --logEvent(EVENT_BROADCAST_SENT_PLAYER_HPS)
-            --logEvent(EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE)
-            --logEvent(EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE)
-
-            logEvent(EVENT_BROADCAST_RECEIVED_GROUP_DPS)
-            logEvent(EVENT_BROADCAST_RECEIVED_GROUP_HPS)
-            logEvent(EVENT_BROADCAST_RECEIVED_GROUP_ULT_VALUE)
-            logEvent(EVENT_BROADCAST_RECEIVED_GROUP_ULT_TYPE)
         end
         if str == "getstats" then
             local stats = instance:GetGroupStats()
