@@ -1184,14 +1184,14 @@ EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
     Log("main", LOG_LEVEL_DEBUG, "Library initialized")
 
     DeclareLGBProtocols()
-
-
-    SLASH_COMMANDS["/libGroupCombatStats"] = function(str)
-        if str == "version" then
-            d(lib_version)
-        end
-    end
 end)
+
+--- cli commands
+SLASH_COMMANDS["/libGroupCombatStats"] = function(str)
+    if str == "version" then
+        d(lib_version)
+    end
+end
 
 
 if lib_debug then
