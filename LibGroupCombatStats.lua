@@ -1180,3 +1180,63 @@ EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
         end
     end
 end)
+
+
+if lib_debug then
+    --- debugging & testing
+    lib.groupStats = groupStats
+    local instance = lib.RegisterAddon("LibGroupCombatStatsTest", {"ULT", "HPS", "DPS"})
+
+    --- slash handler
+    SLASH_COMMANDS["/libshare"] = function(str)
+        if str == "test1" then
+            lib.authKey = RegisterForGroupAddOnDataBroadcastAuthKey("LGCS")
+            d(lib.authKey)
+            return
+        end
+        if str == "version" then d(lib_version) return end
+        if str == "debug" then
+            lib_debug = true
+
+
+            local function logEvent(eventName)
+                LocalEM:RegisterCallback(eventName, function(unitTag, data)
+                    Log("event", LOG_LEVEL_INFO, eventName, unitTag, data )
+                end)
+            end
+
+            --logEvent(EVENT_GROUP_DPS_UPDATE)
+            --logEvent(EVENT_GROUP_HPS_UPDATE)
+            --logEvent(EVENT_GROUP_ULT_UPDATE)
+            --logEvent(EVENT_PLAYER_DPS_UPDATE)
+            --logEvent(EVENT_PLAYER_HPS_UPDATE)
+            --logEvent(EVENT_PLAYER_ULT_UPDATE)
+            --logEvent(EVENT_PLAYER_ULT_TYPE_UPDATE)
+            --logEvent(EVENT_PLAYER_ULT_VALUE_UPDATE)
+
+            --logEvent(EVENT_BROADCAST_SENT_PLAYER_DPS)
+            --logEvent(EVENT_BROADCAST_SENT_PLAYER_HPS)
+            --logEvent(EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE)
+            --logEvent(EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE)
+
+            logEvent(EVENT_BROADCAST_RECEIVED_GROUP_DPS)
+            logEvent(EVENT_BROADCAST_RECEIVED_GROUP_HPS)
+            logEvent(EVENT_BROADCAST_RECEIVED_GROUP_ULT_VALUE)
+            logEvent(EVENT_BROADCAST_RECEIVED_GROUP_ULT_TYPE)
+        end
+        if str == "getstats" then
+            local stats = instance:GetGroupStats()
+            d(stats)
+
+            --for k,v in instance:Iterate() do
+            --    d(v)
+            --end
+
+
+            --local stats = instance:GetUnitStats(localPlayer)
+            --d(stats)
+
+            --d(instance:GetUnitULT(localPlayer))
+        end
+    end
+end
