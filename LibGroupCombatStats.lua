@@ -790,7 +790,7 @@ local function onMessageUltTypeUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
     local charName = GetUnitName(unitTag)
-    if not groupStats[charName].ult then return end
+    if not groupStats[charName] then return end
 
     groupStats[charName].ult.ult1ID = data.ult1ID
     groupStats[charName].ult.ult2ID = data.ult2ID
@@ -803,7 +803,7 @@ local function onMessageUltValueUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
     local charName = GetUnitName(unitTag)
-    if not groupStats[charName].ult then return end
+    if not groupStats[charName] then return end
 
     groupStats[charName].ult.ultValue = data.ultValue
     LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_ULT_VALUE, unitTag, data)
@@ -812,7 +812,7 @@ local function onMessageDpsUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
     local charName = GetUnitName(unitTag)
-    if not groupStats[charName].dps then return end
+    if not groupStats[charName] then return end
 
     groupStats[charName].dps.dmgType = data.dmgType
     groupStats[charName].dps.dmg = data.dmg
@@ -824,7 +824,7 @@ local function onMessageHpsUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
     local charName = GetUnitName(unitTag)
-    if not groupStats[charName].hps then return end
+    if not groupStats[charName] then return end
 
     groupStats[charName].hps.overheal = data.overheal
     groupStats[charName].hps.hps = data.hps
