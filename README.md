@@ -72,19 +72,11 @@ The following events are available:
 | `LibGroupCombatStats.EVENT_PLAYER_HPS_UPDATE` | Triggered when player HPS stats are updated.    |
 | `LibGroupCombatStats.EVENT_PLAYER_ULT_UPDATE` | Triggered when player ultimate stats are updated.|
 
-### Mostly not needed Events ( internal & for broadcasts )
+### Mostly not needed Events ( internal )
 | Event Name                                                     | Description                                                          |
 |----------------------------------------------------------------|----------------------------------------------------------------------|
 | `LibGroupCombatStats.EVENT_PLAYER_ULT_VALUE_UPDATE`            | Triggered when player ultimate value is updated.                     |
 | `LibGroupCombatStats.EVENT_PLAYER_ULT_TYPE_UPDATE`             | Triggered when player ultimate type is updated.                      |
-| `LibGroupCombatStats.EVENT_BROADCAST_RECEIVED_GROUP_DPS`       | Triggered when receiving new DPS data from a groupmember.            |
-| `LibGroupCombatStats.EVENT_BROADCAST_RECEIVED_GROUP_HPS`       | Triggered when receiving new HPS data from a groupmember.            |
-| `LibGroupCombatStats.EVENT_BROADCAST_RECEIVED_GROUP_ULT_VALUE` | Triggered when receiving new ultimate value data from a groupmember. |
-| `LibGroupCombatStats.EVENT_BROADCAST_RECEIVED_GROUP_ULT_TYPE`  | Triggered when receiving new ultimate type data from a groupmember.  |
-| `LibGroupCombatStats.EVENT_BROADCAST_SENT_PLAYER_DPS`          | Triggered when sending new DPS data to group.                        |
-| `LibGroupCombatStats.EVENT_BROADCAST_SENT_PLAYER_HPS`          | Triggered when sending new HPS data to group.                        |
-| `LibGroupCombatStats.EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE`    | Triggered when sending new ultimate value data to group.             |
-| `LibGroupCombatStats.EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE`     | Triggered when sending new ultimate type data to group.              |
 
 
 Example:
@@ -295,7 +287,7 @@ Retrieves DPS information for a specific unit.
 
 Example:
 ```lua
-local dmgType, dmg, dps, lastUpdated = lgcs:GetUnitDPS("group1")
+local dmgType, dmg, dps, _lastUpdated = lgcs:GetUnitDPS("group1")
 d("DPS: " .. dps .. " Damage: " .. dmg)
 ```
 
@@ -314,7 +306,7 @@ Retrieves HPS information for a specific unit.
 
 Example:
 ```lua
-local overheal, hps, lastUpdated = lgcs:GetUnitHPS("group1")
+local overheal, hps, _lastUpdated = lgcs:GetUnitHPS("group1")
 d("HPS: " .. hps .. " Overheal: " .. overheal)
 ```
 
@@ -337,7 +329,7 @@ Retrieves ultimate information for a specific unit.
 
 Example:
 ```lua
-local ultValue, ult1ID, ult1Cost, ult2ID, ult2Cost, setId, lastUpdated = lgcs:GetUnitULT("group1")
+local ultValue, ult1ID, ult1Cost, ult2ID, ult2Cost, setId, _lastUpdated = lgcs:GetUnitULT("group1")
 d("Ultimate value: " .. ultValue)
 ```
 
