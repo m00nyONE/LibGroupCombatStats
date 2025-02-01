@@ -32,7 +32,7 @@ local lib = {
     name = "LibGroupCombatStats",
     version = "dev",
 }
-local lib_debug = false
+local lib_debug = true
 local lib_name = lib.name
 local lib_version = lib.version
 _G[lib_name] = lib
