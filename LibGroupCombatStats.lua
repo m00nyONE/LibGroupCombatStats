@@ -91,16 +91,6 @@ local function Log(category, level, ...)
     local logger = subLoggers[category] or mainLogger
     if type(logger.Log)=="function" then logger:Log(level, ...) end
 end
-local function injectNumber(data, number, size)
-    local newData = BitLShift(data, size)
-    number = zo_max(0, zo_min(number, (2^size)-1))
-    return (newData + number)
-end
-local function extractNumber(data, size)
-    local extractedNumber = data % (2^size)
-    data = BitRShift(data, size)
-    return data, extractedNumber
-end
 
 
 --- constants
@@ -697,95 +687,6 @@ local function registerPlayerStatsUpdateFunctions()
     EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED, updatePlayerSlottedUlts)
     EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE, updatePlayerUltActivatedSets)
     Log("events", LOG_LEVEL_DEBUG, "playerStatsUpdate functions registered")
-end
-
-
---- encoding & decoding of messages
--- ult1 (18bits) ult1Cost (9bits) ult2 (18bits) ult2Cost (9bits) ultActivatedSetID (4bits)
-local function encodeUltType(ult1ID, ult2ID, ult1Cost, ult2Cost, ultActivatedSetID)
-    ult1ID = zo_max(0, zo_min(ult1ID, 2^18-1))
-    ult2ID = zo_max(0, zo_min(ult2ID, 2^18-1))
-    ult1Cost = zo_max(0, zo_min(ult1Cost, 500))
-    ult2Cost = zo_max(0, zo_min(ult2Cost, 500))
-    ultActivatedSetID = zo_max(0, zo_min(ultActivatedSetID, 2^4-1))
-
-    local encodedBinaryData = 0
-    encodedBinaryData = injectNumber(encodedBinaryData, ult1ID, 18)
-    encodedBinaryData = injectNumber(encodedBinaryData, ult2ID, 18)
-    encodedBinaryData = injectNumber(encodedBinaryData, ult1Cost, 9)
-    encodedBinaryData = injectNumber(encodedBinaryData, ult2Cost, 9)
-    encodedBinaryData = injectNumber(encodedBinaryData, ultActivatedSetID, 4)
-
-    return encodedBinaryData
-end
-local function decodeUltType(data)
-    local result = {}
-
-    data, result.ultActivatedSetID = extractNumber(data, 4)
-    data, result.ult2Cost = extractNumber(data, 9)
-    data, result.ult1Cost = extractNumber(data, 9)
-    data, result.ult2ID = extractNumber(data, 18)
-    data, result.ult1ID = extractNumber(data, 18)
-
-    return result
-end
--- ultPoints (8bits)
-local function encodeUltValue(ultValue)
-    ultValue = zo_max(0, zo_min(ultValue, 500))
-
-    local encodedBinaryData = 0
-    encodedBinaryData = injectNumber(encodedBinaryData, zo_floor(ultValue/2), 8)
-
-    return encodedBinaryData
-end
-local function decodeUltValue(data)
-    local result = {}
-
-    _, result.ultValue = extractNumber(data, 8)
-    result.ultValue = result.ultValue * 2  -- * 2 because the ult is compressed so it does not need 2 bytes
-
-    return result
-end
--- dmgType (2bit) dmg (14Bit) dps (10Bit)
-local function encodeDps(dmgType, dmg, dps)
-    dmgType = zo_max(0, zo_min(dmgType, 3))
-    dmg = zo_max(0, zo_min(dmg, 9999))
-    dps = zo_max(0, zo_min(dps, 999))
-
-    local encodedBinaryData = 0
-    encodedBinaryData = injectNumber(encodedBinaryData, dps, 10)
-    encodedBinaryData = injectNumber(encodedBinaryData, dmg, 14)
-    encodedBinaryData = injectNumber(encodedBinaryData, dmgType, 2)
-
-    return encodedBinaryData
-end
-local function decodeDps(data)
-    local result = {}
-
-    data, result.dmgType = extractNumber(data, 2)
-    data, result.dmg = extractNumber(data, 14)
-    data, result.dps = extractNumber(data, 10)
-
-    return result
-end
--- overheal (10Bit) hps (10Bit)
-local function encodeHps(overheal, hps)
-    overheal = zo_max(0, zo_min(overheal, 999))
-    hps = zo_max(0, zo_min(hps, 999))
-
-    local encodedBinaryData = 0
-    encodedBinaryData = injectNumber(encodedBinaryData, overheal, 10)
-    encodedBinaryData = injectNumber(encodedBinaryData, hps, 10)
-
-    return encodedBinaryData
-end
-local function decodeHps(data)
-    local result = {}
-
-    data, result.hps = extractNumber(data, 10)
-    data, result.overheal = extractNumber(data, 10)
-
-    return result
 end
 
 
