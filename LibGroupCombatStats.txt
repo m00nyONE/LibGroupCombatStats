@@ -5,8 +5,8 @@
 ## APIVersion: 101044
 ## AddOnVersion: 00000000
 ## IsLibrary: true
-## DependsOn: LibCombat>=54
-## OptionalDependsOn: LibDebugLogger>=180 LibGroupBroadcast>=1
+## DependsOn: LibCombat>=54 LibGroupBroadcast
+## OptionalDependsOn: LibDebugLogger>=180
 ####### LibAddonMenu-2.0>=32
 
 

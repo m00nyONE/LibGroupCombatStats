@@ -37,15 +37,18 @@ local lib_name = lib.name
 local lib_version = lib.version
 _G[lib_name] = lib
 
+local LGB = LibGroupBroadcast
 local EM = EVENT_MANAGER
 local LocalEM = ZO_CallbackObject:New()
 local strmatch = string.match
+local _LGBProtocols = {}
 local _registeredAddons = {}
 local _statsShared = {
     ["ULT"] = false,
     ["DPS"] = false,
     ["HPS"] = false,
 }
+
 
 --- logging setup
 local mainLogger
@@ -786,45 +789,47 @@ end
 local function onMessageUltTypeUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
-    local result = decodeUltType(data)
     local charName = GetUnitName(unitTag)
-    groupStats[charName].ult.ult1ID = result.ult1ID
-    groupStats[charName].ult.ult2ID = result.ult2ID
-    groupStats[charName].ult.ult1Cost = result.ult1Cost
-    groupStats[charName].ult.ult2Cost = result.ult2Cost
-    groupStats[charName].ult.ultActivatedSetID = result.ultActivatedSetID
+    if not groupStats[charName].ult then return end
 
-    LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_ULT_TYPE, unitTag, result)
+    groupStats[charName].ult.ult1ID = data.ult1ID
+    groupStats[charName].ult.ult2ID = data.ult2ID
+    groupStats[charName].ult.ult1Cost = data.ult1Cost
+    groupStats[charName].ult.ult2Cost = data.ult2Cost
+    groupStats[charName].ult.ultActivatedSetID = data.ultActivatedSetID
+    LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_ULT_TYPE, unitTag, data)
 end
 local function onMessageUltValueUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
-    local result = decodeUltValue(data)
     local charName = GetUnitName(unitTag)
-    groupStats[charName].ult.ultValue = result.ultValue
+    if not groupStats[charName].ult then return end
 
-    LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_ULT_VALUE, unitTag, result)
+    groupStats[charName].ult.ultValue = data.ultValue
+    LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_ULT_VALUE, unitTag, data)
 end
 local function onMessageDpsUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
-    local result = decodeDps(data)
     local charName = GetUnitName(unitTag)
-    groupStats[charName].dps.dmgType = result.dmgType
-    groupStats[charName].dps.dmg = result.dmg
-    groupStats[charName].dps.dps = result.dps
+    if not groupStats[charName].dps then return end
 
-    LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_DPS, unitTag, result)
+    groupStats[charName].dps.dmgType = data.dmgType
+    groupStats[charName].dps.dmg = data.dmg
+    groupStats[charName].dps.dps = data.dps
+
+    LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_DPS, unitTag, data)
 end
 local function onMessageHpsUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
-    local result = decodeHps(data)
     local charName = GetUnitName(unitTag)
-    groupStats[charName].hps.overheal = result.overheal
-    groupStats[charName].hps.hps = result.hps
+    if not groupStats[charName].hps then return end
 
-    LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_HPS, unitTag, result)
+    groupStats[charName].hps.overheal = data.overheal
+    groupStats[charName].hps.hps = data.hps
+
+    LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_HPS, unitTag, data)
 end
 
 local function onMessageUltTypeUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
@@ -836,23 +841,61 @@ local function onMessageHpsUpdateReceived_V2(unitTag, data) toNewToProcessWarnin
 --- periodically sent broadcast messages
 local function broadcastPlayerDps()
     if not _statsShared["DPS"] then return end
-    local data = encodeDps(playerStats.dps.dmgType, playerStats.dps.dmg, playerStats.dps.dps)
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_DPS, localPlayer, data)
+
+    _LGBProtocols[MESSAGE_ID_DPS]:Send({
+        dmgType = playerStats.dps.dmgType,
+        dmg = playerStats.dps.dmg,
+        dps = playerStats.dps.dps
+    })
+
+    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_DPS, localPlayer, {
+        dmgType = playerStats.dps.dmgType,
+        dmg = playerStats.dps.dmg,
+        dps = playerStats.dps.dps
+    })
 end
 local function broadcastPlayerHps()
     if not _statsShared["HPS"] then return end
-    local data = encodeHps(playerStats.hps.overheal, playerStats.hps.hps)
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_HPS, localPlayer, data)
+
+    _LGBProtocols[MESSAGE_ID_HPS]:Send({
+        overheal = playerStats.hps.overheal,
+        hps = playerStats.hps.hps
+    })
+
+    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_HPS, localPlayer, {
+        overheal = playerStats.hps.overheal,
+        hps = playerStats.hps.hps
+    })
 end
 local function broadcastPlayerUltValue()
     if not _statsShared["ULT"] then return end
-    local data = encodeUltValue(playerStats.ult.ultValue)
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE, localPlayer, data)
+
+    _LGBProtocols[MESSAGE_ID_ULTVALUE]:Send({
+        ultValue = playerStats.ult.ultValue
+    })
+
+    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE, localPlayer, {
+       ultValue = playerStats.ult.ultValue
+    })
 end
 local function broadcastPlayerUltType()
     if not _statsShared["ULT"] then return end
-    local data = encodeUltType(playerStats.ult.ult1ID, playerStats.ult.ult2ID, playerStats.ult.ult1Cost, playerStats.ult.ult2Cost, playerStats.ult.ultActivatedSetID)
-    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE, localPlayer, data)
+
+    _LGBProtocols[MESSAGE_ID_ULTTYPE]:Send({
+        ult1ID = playerStats.ult.ult1ID,
+        ult2ID = playerStats.ult.ult2ID,
+        ult1Cost = playerStats.ult.ult1Cost,
+        ult2Cost = playerStats.ult.ult2Cost,
+        ultActivatedSetID = playerStats.ult.ultActivatedSetID
+    })
+
+    LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_TYPE, localPlayer, {
+        ult1ID = playerStats.ult.ult1ID,
+        ult2ID = playerStats.ult.ult2ID,
+        ult1Cost = playerStats.ult.ult1Cost,
+        ult2Cost = playerStats.ult.ult2Cost,
+        ultActivatedSetID = playerStats.ult.ultActivatedSetID
+    })
 end
 
 
@@ -1055,6 +1098,69 @@ local function onPlayerActivated()
 end
 
 
+--- LibGroupBroadcast
+local function DeclareLGBProtocols()
+    local protocolOptions = {
+        isRelevantInCombat = true
+    }
+
+    local protocolDps = LGB:DeclareProtocol(MESSAGE_ID_DPS, "LibGroupCombatStats DPS Share")
+    protocolDps:OnData(onMessageDpsUpdateReceived)
+    protocolDps:AddField(LGB.CreateNumericField("dmgType", {
+        numBits = 2
+    }))
+    protocolDps:AddField(LGB.CreateNumericField("dmg", {
+        numBits = 14
+    }))
+    protocolDps:AddField(LGB.CreateNumericField("dps", {
+        numBits = 10
+    }))
+    protocolDps:Finalize(protocolOptions)
+
+    local protocolHps = LGB:DeclareProtocol(MESSAGE_ID_HPS, "LibGroupCombatStats HPS Share")
+    protocolHps:OnData(onMessageHpsUpdateReceived)
+    protocolHps:AddField(LGB.CreateNumericField("overheal", {
+        numBits = 10
+    }))
+    protocolHps:AddField(LGB.CreateNumericField("hps", {
+        numBits = 10
+    }))
+    protocolHps:Finalize(protocolOptions)
+
+    local protocolUltType = LGB:DeclareProtocol(MESSAGE_ID_ULTTYPE, "LibGroupCombatStats Ult Type Share")
+    protocolUltType:OnData(onMessageUltTypeUpdateReceived)
+    protocolUltType:AddField(LGB.CreateNumericField("ult1ID", {
+        numBits = 18
+    }))
+    protocolUltType:AddField(LGB.CreateNumericField("ult2ID", {
+        numBits = 18
+    }))
+    protocolUltType:AddField(LGB.CreateNumericField("ult1Cost", {
+        numBits = 9
+    }))
+    protocolUltType:AddField(LGB.CreateNumericField("ult2Cost", {
+        numBits = 9
+    }))
+    protocolUltType:AddField(LGB.CreateNumericField("ultActivatedSetID", {
+        numBits = 4
+    }))
+
+    protocolUltType:Finalize(protocolOptions)
+
+    local protocolUltValue = LGB:DeclareProtocol(MESSAGE_ID_ULTVALUE, "LibGroupCombatStats Ult Value Share")
+    protocolUltValue:OnData(onMessageUltValueUpdateReceived)
+    protocolUltValue:AddField(LGB.CreateNumericField("ultValue", {
+        numBits = 8
+    }))
+    protocolUltValue:Finalize(protocolOptions)
+
+    _LGBProtocols[MESSAGE_ID_DPS] = protocolDps
+    _LGBProtocols[MESSAGE_ID_HPS] = protocolHps
+    _LGBProtocols[MESSAGE_ID_ULTTYPE] = protocolUltType
+    _LGBProtocols[MESSAGE_ID_ULTVALUE] = protocolUltValue
+end
+
+
 --- register the addon
 EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
     if name ~= lib_name then return end
@@ -1064,6 +1170,9 @@ EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
     EM:UnregisterForEvent(lib_name, EVENT_PLAYER_ACTIVATED)
     EM:RegisterForEvent(lib_name, EVENT_PLAYER_ACTIVATED, onPlayerActivated)
     Log("main", LOG_LEVEL_DEBUG, "Library initialized")
+
+    DeclareLGBProtocols()
+
 
     SLASH_COMMANDS["/libGroupCombatStats"] = function(str)
         if str == "version" then
