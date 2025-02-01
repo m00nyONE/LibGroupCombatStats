@@ -810,10 +810,10 @@ end
 local function onMessageUltValueUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
-    data.ultValue = data.ultValue * 2
-
     local charName = GetUnitName(unitTag)
     if not groupStats[charName] then return end
+
+    data.ultValue = data.ultValue * 2
 
     groupStats[charName].ult.ultValue = data.ultValue
     LocalEM:FireCallbacks(EVENT_BROADCAST_RECEIVED_GROUP_ULT_VALUE, unitTag, data)
@@ -850,6 +850,7 @@ local function onMessageHpsUpdateReceived_V2(unitTag, data) toNewToProcessWarnin
 
 --- periodically sent broadcast messages
 local function broadcastPlayerDps()
+    if not IsUnitGrouped(localPlayer) then return end
     if not _statsShared[DPS] then return end
 
     local data = {
@@ -862,6 +863,7 @@ local function broadcastPlayerDps()
     LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_DPS, localPlayer, data)
 end
 local function broadcastPlayerHps()
+    if not IsUnitGrouped(localPlayer) then return end
     if not _statsShared[HPS] then return end
 
     local data = {
@@ -873,6 +875,7 @@ local function broadcastPlayerHps()
     LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_HPS, localPlayer, data)
 end
 local function broadcastPlayerUltValue()
+    if not IsUnitGrouped(localPlayer) then return end
     if not _statsShared[ULT] then return end
 
     local data = {
@@ -883,6 +886,7 @@ local function broadcastPlayerUltValue()
     LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE, localPlayer, data)
 end
 local function broadcastPlayerUltType()
+    if not IsUnitGrouped(localPlayer) then return end
     if not _statsShared[ULT] then return end
 
     local data = {
