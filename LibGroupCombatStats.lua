@@ -84,33 +84,6 @@ local function Log(category, level, ...)
     local logger = subLoggers[category] or mainLogger
     if type(logger.Log)=="function" then logger:Log(level, ...) end
 end
-local function cloneOf(obj, seen)
-    if type(obj) ~= 'table' then return obj end
-    if seen and seen[obj] then return seen[obj] end
-    local s = seen or {}
-    local res = setmetatable({}, getmetatable(obj))
-    s[obj] = res
-    for k, v in pairs(obj) do res[cloneOf(k, s)] = cloneOf(v, s) end
-    return res
-end
-local function toBits(num,bits)
-    bits = bits or zo_max(1, select(2, math.frexp(num)))
-    local t = {}
-    for b = bits, 1, -1 do
-        t[b] = math.fmod(num, 2)
-        num = zo_floor((num - t[b]) / 2)
-    end
-
-    local str = ""
-    for i, b in ipairs(t) do
-        str = str .. b
-        if i % 4 == 0 then
-            str = str .. " "
-        end
-    end
-
-    return str
-end
 local function injectNumber(data, number, size)
     local newData = BitLShift(data, size)
     number = zo_max(0, zo_min(number, (2^size)-1))
@@ -351,7 +324,7 @@ end
 -- Returns a list of functionalities currently enabled in the library
 -- @return (string, string, string): Currently enabled functionalities ("DPS", "HPS", "ULT")
 function _CombatStatsObject:GetStatsShared()
-    return cloneOf(_statsShared)
+    return ZO_DeepTableCopy(_statsShared)
 end
 -- Returns key, value of groupStats
 -- @return (string, table): key value pairs of groupStats
