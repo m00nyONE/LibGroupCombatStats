@@ -802,6 +802,8 @@ end
 local function onMessageUltValueUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
+    data.ultValue = data.ultValue * 2
+
     local charName = GetUnitName(unitTag)
     if not groupStats[charName] then return end
 
@@ -871,11 +873,11 @@ local function broadcastPlayerUltValue()
     if not _statsShared["ULT"] then return end
 
     _LGBProtocols[MESSAGE_ID_ULTVALUE]:Send({
-        ultValue = playerStats.ult.ultValue
+        ultValue = zo_floor(playerStats.ult.ultValue / 2)
     })
 
     LocalEM:FireCallbacks(EVENT_BROADCAST_SENT_PLAYER_ULT_VALUE, localPlayer, {
-       ultValue = playerStats.ult.ultValue
+       ultValue = zo_floor(playerStats.ult.ultValue / 2)
     })
 end
 local function broadcastPlayerUltType()
