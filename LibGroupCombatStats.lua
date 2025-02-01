@@ -650,6 +650,10 @@ local function updatePlayerSlottedUlts()
     LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
 end
 local function updatePlayerUltimateCost()
+    local ult1Cost = GetAbilityCost(playerStats.ult.ult1ID)
+    local ult2Cost = GetAbilityCost(playerStats.ult.ult2ID)
+    if playerStats.ult.ult1Cost == ult1Cost and playerStats.ult.ult2Cost == ult2Cost then return end
+
     playerStats.ult.ult1Cost = GetAbilityCost(playerStats.ult.ult1ID)
     playerStats.ult.ult2Cost = GetAbilityCost(playerStats.ult.ult2ID)
     LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
