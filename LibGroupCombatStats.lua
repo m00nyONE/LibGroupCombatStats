@@ -1096,7 +1096,6 @@ local function onPlayerActivated()
 
 end
 
-
 --- LibGroupBroadcast
 local function DeclareLGBProtocols()
     local protocolOptions = {
@@ -1106,49 +1105,60 @@ local function DeclareLGBProtocols()
     local protocolDps = LGB:DeclareProtocol(MESSAGE_ID_DPS, "LibGroupCombatStats DPS Share")
     protocolDps:OnData(onMessageDpsUpdateReceived)
     protocolDps:AddField(LGB.CreateNumericField("dmgType", {
-        numBits = 2
+        minValue = 0,
+        maxValue = 2,
     }))
     protocolDps:AddField(LGB.CreateNumericField("dmg", {
-        numBits = 14
+        minValue = 0,
+        maxValue = 9999,
     }))
     protocolDps:AddField(LGB.CreateNumericField("dps", {
-        numBits = 10
+        minValue = 0,
+        maxValue = 999,
     }))
     protocolDps:Finalize(protocolOptions)
 
     local protocolHps = LGB:DeclareProtocol(MESSAGE_ID_HPS, "LibGroupCombatStats HPS Share")
     protocolHps:OnData(onMessageHpsUpdateReceived)
     protocolHps:AddField(LGB.CreateNumericField("overheal", {
-        numBits = 10
+        minValue = 0,
+        maxValue = 999,
     }))
     protocolHps:AddField(LGB.CreateNumericField("hps", {
-        numBits = 10
+        minValue = 0,
+        maxValue = 999,
     }))
     protocolHps:Finalize(protocolOptions)
 
     local protocolUltType = LGB:DeclareProtocol(MESSAGE_ID_ULTTYPE, "LibGroupCombatStats Ult Type Share")
     protocolUltType:OnData(onMessageUltTypeUpdateReceived)
     protocolUltType:AddField(LGB.CreateNumericField("ult1ID", {
-        numBits = 18
+        minValue = 0,
+        maxValue = 2^18-1,
     }))
     protocolUltType:AddField(LGB.CreateNumericField("ult2ID", {
-        numBits = 18
+        minValue = 0,
+        maxValue = 2^18-1,
     }))
     protocolUltType:AddField(LGB.CreateNumericField("ult1Cost", {
-        numBits = 9
+        minValue = 0,
+        maxValue = 500,
     }))
     protocolUltType:AddField(LGB.CreateNumericField("ult2Cost", {
-        numBits = 9
+        minValue = 0,
+        maxValue = 500,
     }))
     protocolUltType:AddField(LGB.CreateNumericField("ultActivatedSetID", {
-        numBits = 4
+        minValue = 0,
+        maxValue = 15,
     }))
     protocolUltType:Finalize(protocolOptions)
 
     local protocolUltValue = LGB:DeclareProtocol(MESSAGE_ID_ULTVALUE, "LibGroupCombatStats Ult Value Share")
     protocolUltValue:OnData(onMessageUltValueUpdateReceived)
     protocolUltValue:AddField(LGB.CreateNumericField("ultValue", {
-        numBits = 8
+        minValue = 0,
+        maxValue = 250,
     }))
     protocolUltValue:Finalize(protocolOptions)
 
