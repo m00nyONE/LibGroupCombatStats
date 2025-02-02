@@ -222,6 +222,7 @@ function ObservableTable:New(onChangeCallback, fireAfterLastChangeMS, initTable)
         _onChangeCallback = onChangeCallback, -- User-provided callback function
         _fireAfterLastChangeMS = fireAfterLastChangeMS or 0, -- Delay in milliseconds before firing the callback
         _lastUpdated = 0, -- Timestamp of the last update (in milliseconds)
+        _lastChanged = 0, -- Timestamp of the last update (in milliseconds)
         _eventId = "" -- Unique update event name for this instance
     }
 
@@ -244,11 +245,13 @@ end
 -- @param value (any): The new value being assigned to the key
 function ObservableTable:__newindex(key, value)
     -- It's important to check if the values are different otherwise every write fires the callback
-    local oldValue = self._data[key]
+    local oldValue = rawget(self._data, key)
+    local t = GetGameTimeMilliseconds()
+    rawset(self, "_lastUpdated", t) -- Update the last modification attempt timestamp
 
     if oldValue ~= value then
-        self._lastUpdated = GetGameTimeMilliseconds() -- Update the last modification timestamp
-        self._data[key] = value -- Update the value in the internal data storage
+        rawset(self, "_lastChanged", t) -- Update the last modification timestamp
+        rawset(self._data, key, value) -- Update the value in the internal data storage
         self._onChange(self) -- Trigger the internal onChange handler
     end
 end
@@ -333,18 +336,21 @@ function _CombatStatsObject:Iterate()
                 ult1Cost = ult.ult1Cost,
                 ult2Cost = ult.ult2Cost,
                 ultActivatedSetID = ult.ultActivatedSetID,
-                _lastUpdated = ult._lastUpdated
+                _lastUpdated = ult._lastUpdated,
+                _lastChanged = ult._lastChanged
             },
             dps = {
                 dmgType = dps.dmgType,
                 dps = dps.dps,
                 dmg = dps.dmg,
-                _lastUpdated = dps._lastUpdated
+                _lastUpdated = dps._lastUpdated,
+                _lastChanged = dps._lastChanged
             },
             hps = {
                 hps = hps.hps,
                 overheal = hps.overheal,
-                _lastUpdated = hps._lastUpdated
+                _lastUpdated = hps._lastUpdated,
+                _lastChanged = hps._lastChanged
             },
         }
     end
