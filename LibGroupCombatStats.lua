@@ -113,6 +113,11 @@ local PLAYER_ULT_VALUE_SEND_INTERVAL = 2000
 local PLAYER_DPS_SEND_INTERVAL = 2000
 local PLAYER_HPS_SEND_INTERVAL = 2000
 
+local PLAYER_ULT_TYPE_UPDATE_INTERVAL_ENABLED = false
+local PLAYER_ULT_VALUE_UPDATE_INTERVAL_ENABLED = false
+local PLAYER_DPS_UPDATE_INTERVAL_ENABLED = false
+local PLAYER_HPS_UPDATE_INTERVAL_ENABLED = false
+
 local ULT_ACTIVATED_SET_LIST = {
     {
         name = "saxhleel",
@@ -784,9 +789,11 @@ end
 
 --- on demand sent broadcast messages
 local function onDelayedUltTypeChange(_)
-    -- reset interval for ultType sharing
-    EM:UnregisterForUpdate(lib_name .. "_SendUltType")
-    EM:RegisterForUpdate(lib_name .. "_SendUltType", PLAYER_ULT_TYPE_SEND_INTERVAL, broadcastPlayerUltType)
+    if PLAYER_ULT_TYPE_UPDATE_INTERVAL_ENABLED then
+        -- reset interval for ultType sharing
+        EM:UnregisterForUpdate(lib_name .. "_SendUltType")
+        EM:RegisterForUpdate(lib_name .. "_SendUltType", PLAYER_ULT_TYPE_SEND_INTERVAL, broadcastPlayerUltType)
+    end
 
     -- broadcast ultType data
     broadcastPlayerUltType()
@@ -795,6 +802,7 @@ end
 local playerUltTypeObservableTable = ObservableTable:New(onDelayedUltTypeChange, 2000, {
     lastChange = GetGameTimeMilliseconds(),
 })
+
 -- writes to playerUltTypeObservableTable to trigger the onDelayedUltTypeChange
 local function onPlayerUltTypeUpdate(unitTag, _)
     if unitTag ~= localPlayer then return end
@@ -841,7 +849,9 @@ local function enablePlayerBroadcastHPS()
 end
 local function disablePlayerBroadcastULT()
     EM:UnregisterForUpdate(lib_name .. "_SendUltValue") -- unregister periodic ultValue broadcast
-    EM:UnregisterForUpdate(lib_name .. "_SendUltType") -- unregister periodic ultType broadcast
+    if PLAYER_ULT_TYPE_UPDATE_INTERVAL_ENABLED then
+        EM:UnregisterForUpdate(lib_name .. "_SendUltType") -- unregister periodic ultType broadcast
+    end
     LocalEM:UnregisterCallback(EVENT_PLAYER_ULT_TYPE_UPDATE, onPlayerUltTypeUpdate) -- unregister async ultType broadcast
 
     Log("events", LOG_LEVEL_DEBUG, "ULT broadcast disabled")
@@ -849,7 +859,9 @@ end
 local function enablePlayerBroadcastULT()
     disablePlayerBroadcastULT()
     EM:RegisterForUpdate(lib_name .. "_SendUltValue", PLAYER_ULT_VALUE_SEND_INTERVAL, broadcastPlayerUltValue) -- register periodic ultValue broadcast
-    EM:RegisterForUpdate(lib_name .. "_SendUltType", PLAYER_ULT_TYPE_SEND_INTERVAL, broadcastPlayerUltType) -- register periodic ultType broadcast
+    if PLAYER_ULT_TYPE_UPDATE_INTERVAL_ENABLED then
+        EM:RegisterForUpdate(lib_name .. "_SendUltType", PLAYER_ULT_TYPE_SEND_INTERVAL, broadcastPlayerUltType) -- register periodic ultType broadcast
+    end
     LocalEM:RegisterCallback(EVENT_PLAYER_ULT_TYPE_UPDATE, onPlayerUltTypeUpdate) -- register async ultType broadcast
 
     Log("events", LOG_LEVEL_DEBUG, "ULT broadcast enabled")
