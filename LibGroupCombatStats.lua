@@ -107,8 +107,8 @@ local PLAYER_ULT_VALUE_UPDATE_INTERVAL = 1000
 local PLAYER_DPS_UPDATE_INTERVAL = 1000
 local PLAYER_HPS_UPDATE_INTERVAL = 1000
 
-local PLAYER_ULT_TYPE_SEND_INTERVAL = 15000
 local PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY = 1000
+local PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY = 1000
 local PLAYER_ULT_VALUE_SEND_INTERVAL = 2000
 local PLAYER_DPS_SEND_INTERVAL = 2000
 local PLAYER_HPS_SEND_INTERVAL = 2000
@@ -733,9 +733,10 @@ local function onMessageHpsUpdateReceived_V2(unitTag, data) toNewToProcessWarnin
 
 
 --- periodically sent broadcast messages
-local function broadcastPlayerDps()
+local function broadcastPlayerDps(_, force)
     if not IsUnitGrouped(localPlayer) then return end
     if not _statsShared[DPS] then return end
+    if not force and GetGameTimeMilliseconds() - playerStats.dps._lastChanged > PLAYER_DPS_SEND_INTERVAL then return end
 
     local data = {
         dmgType = playerStats.dps.dmgType,
@@ -745,9 +746,10 @@ local function broadcastPlayerDps()
 
     _LGBProtocols[MESSAGE_ID_DPS]:Send(data)
 end
-local function broadcastPlayerHps()
+local function broadcastPlayerHps(_, force)
     if not IsUnitGrouped(localPlayer) then return end
     if not _statsShared[HPS] then return end
+    if not force and GetGameTimeMilliseconds() - playerStats.hps._lastChanged > PLAYER_HPS_SEND_INTERVAL then return end
 
     local data = {
         overheal = playerStats.hps.overheal,
@@ -756,9 +758,10 @@ local function broadcastPlayerHps()
 
     _LGBProtocols[MESSAGE_ID_HPS]:Send(data)
 end
-local function broadcastPlayerUltValue()
+local function broadcastPlayerUltValue(_, force)
     if not IsUnitGrouped(localPlayer) then return end
     if not _statsShared[ULT] then return end
+    if not force and GetGameTimeMilliseconds() - playerStats.ult._lastChanged > PLAYER_ULT_VALUE_SEND_INTERVAL then return end
 
     local data = {
         ultValue = zo_floor(playerStats.ult.ultValue / 2)
@@ -799,13 +802,18 @@ end
 local function broadcastSyncRequest()
     if not IsUnitGrouped(localPlayer) then return end
     _LGBProtocols[MESSAGE_ID_SYNC]:Send({
-        onReloadUI = true
+        syncRequest = true
     })
 end
 local function onMessageSyncReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
-    if data.onReloadUI then broadcastPlayerUltType() end
+    if data.syncRequest then
+        broadcastPlayerUltType()
+        broadcastPlayerUltValue(_, true)
+        broadcastPlayerDps(_, true)
+        broadcastPlayerHps(_, true)
+    end
 end
 
 
@@ -914,6 +922,7 @@ end
 local function OnGroupChangeDelayed()
     zo_callLater(OnGroupChange, 500) -- wait 500ms to avoid any race conditions
     zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+    zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
 end
 local function unregisterGroupEvents()
     EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED)
@@ -1002,7 +1011,7 @@ local function DeclareLGBProtocols()
     }
 
     local protocolSync = LGB:DeclareProtocol(MESSAGE_ID_SYNC, "LibGroupCombatStats Sync Packet")
-    protocolSync:AddField(CreateFlagField("onReloadUI", {
+    protocolSync:AddField(CreateFlagField("syncRequest", {
         defaultValue = false,
     }))
     protocolSync:OnData(onMessageSyncReceived)
@@ -1056,9 +1065,6 @@ local function DeclareLGBProtocols()
     protocolUltType:AddField(CreateNumericField("ultActivatedSetID", {
         minValue = 0,
         maxValue = 2^4-1,
-    }))
-    protocolUltType:AddField(CreateFlagField("syncRequest", {
-        defaultValue = false
     }))
     protocolUltType:OnData(onMessageUltTypeUpdateReceived)
     protocolUltType:Finalize(protocolOptions)
