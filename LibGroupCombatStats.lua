@@ -45,6 +45,7 @@ local LGB = LibGroupBroadcast
 local EM = EVENT_MANAGER
 local LocalEM = ZO_CallbackObject:New()
 local strmatch = string.match
+local _isFirstOnPlayerActivated = true
 local _LGBProtocols = {}
 local _registeredAddons = {}
 local _statsShared = {
@@ -953,6 +954,9 @@ end
 
 --- Addon initialization
 local function onPlayerActivated()
+   -- check if it's the first call of onPlayerActivated - for example after logging in or after a reloadui
+    if not _isFirstOnPlayerActivated then return end
+
     Log("debug", LOG_LEVEL_DEBUG, "onPlayerActivated called")
 
     -- trigger group update
@@ -970,6 +974,7 @@ local function onPlayerActivated()
     updatePlayerSlottedUlts()
     updatePlayerUltActivatedSets()
 
+    _isFirstOnPlayerActivated = false
 end
 
 --- LibGroupBroadcast
