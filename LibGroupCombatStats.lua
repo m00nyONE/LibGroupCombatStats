@@ -97,6 +97,7 @@ end
 --- constants
 local localPlayer = "player"
 
+local MESSAGE_ID_SYNC = 9
 local MESSAGE_ID_ULTTYPE = 10
 local MESSAGE_ID_ULTVALUE = 11
 local MESSAGE_ID_DPS = 12
@@ -795,6 +796,20 @@ local function onPlayerUltTypeUpdate(unitTag, _)
 end
 
 
+--- sync packet logic
+local function broadcastSyncRequest()
+    if not IsUnitGrouped(localPlayer) then return end
+    _LGBProtocols[MESSAGE_ID_SYNC]:Send({
+        onReloadUI = true
+    })
+end
+local function onMessageSyncReceived(unitTag, data)
+    if AreUnitsEqual(unitTag, localPlayer) then return end
+
+    if data.onReloadUI then onDelayedUltTypeChange() end
+end
+
+
 --- enable / disable broadcasting of stats
 local function disablePlayerBroadcastDPS()
     EM:UnregisterForUpdate(lib_name .. "_SendDps") -- unregister periodic dps broadcast
@@ -962,6 +977,9 @@ local function onPlayerActivated()
     -- trigger group update
     OnGroupChangeDelayed()
 
+    -- request sync from group members
+    broadcastSyncRequest()
+
     -- register group update events
     unregisterGroupEvents()
     registerGroupEvents()
@@ -980,10 +998,18 @@ end
 --- LibGroupBroadcast
 local function DeclareLGBProtocols()
     local CreateNumericField = LGB.CreateNumericField
+    local CreateFlagField = LGB.CreateFlagField
 
     local protocolOptions = {
         isRelevantInCombat = true
     }
+
+    local protocolSync = LGB:DeclareProtocol(MESSAGE_ID_SYNC, "LibGroupCombatStats Sync Packet")
+    protocolSync:AddField(CreateFlagField("onReloadUI", {
+        defaultValue = false,
+    }))
+    protocolSync:OnData(onMessageSyncReceived)
+    protocolSync:Finalize(protocolOptions)
 
     local protocolDps = LGB:DeclareProtocol(MESSAGE_ID_DPS, "LibGroupCombatStats DPS Share")
     protocolDps:AddField(CreateNumericField("dmgType", {
@@ -1045,6 +1071,7 @@ local function DeclareLGBProtocols()
     protocolUltValue:OnData(onMessageUltValueUpdateReceived)
     protocolUltValue:Finalize(protocolOptions)
 
+    _LGBProtocols[MESSAGE_ID_SYNC] = protocolSync
     _LGBProtocols[MESSAGE_ID_DPS] = protocolDps
     _LGBProtocols[MESSAGE_ID_HPS] = protocolHps
     _LGBProtocols[MESSAGE_ID_ULTTYPE] = protocolUltType
@@ -1101,7 +1128,3 @@ SLASH_COMMANDS["/libshare"] = function(str)
     end
 end
 
-            --d(instance:GetUnitULT(localPlayer))
-        end
-    end
-end
