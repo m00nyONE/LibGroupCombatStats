@@ -32,7 +32,7 @@ local lib = {
     name = "LibGroupCombatStats",
     version = "dev",
 }
-local lib_debug = true
+local lib_debug = false
 local lib_name = lib.name
 local lib_version = lib.version
 _G[lib_name] = lib
@@ -112,11 +112,6 @@ local PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY = 1000
 local PLAYER_ULT_VALUE_SEND_INTERVAL = 2000
 local PLAYER_DPS_SEND_INTERVAL = 2000
 local PLAYER_HPS_SEND_INTERVAL = 2000
-
-local PLAYER_ULT_TYPE_UPDATE_INTERVAL_ENABLED = false
-local PLAYER_ULT_VALUE_UPDATE_INTERVAL_ENABLED = false
-local PLAYER_DPS_UPDATE_INTERVAL_ENABLED = false
-local PLAYER_HPS_UPDATE_INTERVAL_ENABLED = false
 
 local ULT_ACTIVATED_SET_LIST = {
     {
@@ -788,22 +783,12 @@ end
 
 
 --- on demand sent broadcast messages
-local function onDelayedUltTypeChange(_)
-    if PLAYER_ULT_TYPE_UPDATE_INTERVAL_ENABLED then
-        -- reset interval for ultType sharing
-        EM:UnregisterForUpdate(lib_name .. "_SendUltType")
-        EM:RegisterForUpdate(lib_name .. "_SendUltType", PLAYER_ULT_TYPE_SEND_INTERVAL, broadcastPlayerUltType)
-    end
-
-    -- broadcast ultType data
-    broadcastPlayerUltType()
-end
 -- this ObservableTable is created to have a callback function waiting on further changes before broadcasting to avoid sending multiple messages when swapping loadouts
-local playerUltTypeObservableTable = ObservableTable:New(onDelayedUltTypeChange, 2000, {
+local playerUltTypeObservableTable = ObservableTable:New(broadcastPlayerUltType, 2000, {
     lastChange = GetGameTimeMilliseconds(),
 })
 
--- writes to playerUltTypeObservableTable to trigger the onDelayedUltTypeChange
+-- writes to playerUltTypeObservableTable to trigger the broadcastPlayerUltType
 local function onPlayerUltTypeUpdate(unitTag, _)
     if unitTag ~= localPlayer then return end
     playerUltTypeObservableTable.lastChange = GetGameTimeMilliseconds()
@@ -820,7 +805,7 @@ end
 local function onMessageSyncReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
-    if data.onReloadUI then onDelayedUltTypeChange() end
+    if data.onReloadUI then broadcastPlayerUltType() end
 end
 
 
@@ -849,9 +834,6 @@ local function enablePlayerBroadcastHPS()
 end
 local function disablePlayerBroadcastULT()
     EM:UnregisterForUpdate(lib_name .. "_SendUltValue") -- unregister periodic ultValue broadcast
-    if PLAYER_ULT_TYPE_UPDATE_INTERVAL_ENABLED then
-        EM:UnregisterForUpdate(lib_name .. "_SendUltType") -- unregister periodic ultType broadcast
-    end
     LocalEM:UnregisterCallback(EVENT_PLAYER_ULT_TYPE_UPDATE, onPlayerUltTypeUpdate) -- unregister async ultType broadcast
 
     Log("events", LOG_LEVEL_DEBUG, "ULT broadcast disabled")
@@ -859,9 +841,6 @@ end
 local function enablePlayerBroadcastULT()
     disablePlayerBroadcastULT()
     EM:RegisterForUpdate(lib_name .. "_SendUltValue", PLAYER_ULT_VALUE_SEND_INTERVAL, broadcastPlayerUltValue) -- register periodic ultValue broadcast
-    if PLAYER_ULT_TYPE_UPDATE_INTERVAL_ENABLED then
-        EM:RegisterForUpdate(lib_name .. "_SendUltType", PLAYER_ULT_TYPE_SEND_INTERVAL, broadcastPlayerUltType) -- register periodic ultType broadcast
-    end
     LocalEM:RegisterCallback(EVENT_PLAYER_ULT_TYPE_UPDATE, onPlayerUltTypeUpdate) -- register async ultType broadcast
 
     Log("events", LOG_LEVEL_DEBUG, "ULT broadcast enabled")
@@ -934,7 +913,7 @@ local function OnGroupChange()
 end
 local function OnGroupChangeDelayed()
     zo_callLater(OnGroupChange, 500) -- wait 500ms to avoid any race conditions
-    zo_callLater(onDelayedUltTypeChange, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+    zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
 end
 local function unregisterGroupEvents()
     EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED)
@@ -986,7 +965,7 @@ end
 
 
 --- Addon initialization
-local function onPlayerActivated()
+local function onPlayerActivated(_, initial)
    -- check if it's the first call of onPlayerActivated - for example after logging in or after a reloadui
     if not _isFirstOnPlayerActivated then return end
 
@@ -1077,6 +1056,9 @@ local function DeclareLGBProtocols()
     protocolUltType:AddField(CreateNumericField("ultActivatedSetID", {
         minValue = 0,
         maxValue = 2^4-1,
+    }))
+    protocolUltType:AddField(CreateFlagField("syncRequest", {
+        defaultValue = false
     }))
     protocolUltType:OnData(onMessageUltTypeUpdateReceived)
     protocolUltType:Finalize(protocolOptions)
