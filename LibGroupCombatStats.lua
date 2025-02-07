@@ -1053,7 +1053,6 @@ local function declareLGBProtocols()
         isRelevantInCombat = true
     }
     local handlerId = LGB:RegisterHandler("LibGroupCombatStats", "LibGroupCombatStats")
-    d(handlerId)
     local protocolSync = LGB:DeclareProtocol(handlerId, MESSAGE_ID_SYNC, "LibGroupCombatStats Sync Packet")
     protocolSync:AddField(CreateFlagField("syncRequest", {
         defaultValue = false,
