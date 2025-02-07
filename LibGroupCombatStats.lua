@@ -53,6 +53,8 @@ local _statsShared = {
     [DPS] = false,
     [HPS] = false,
 }
+local _ultIdMap = {}
+local _ultInternalIdMap = {}
 
 
 --- logging setup
@@ -690,10 +692,10 @@ local function onMessageUltTypeUpdateReceived(unitTag, data)
     local charName = GetUnitName(unitTag)
     if not groupStats[charName] then return end
 
-    groupStats[charName].ult.ult1ID = data.ult1ID
-    groupStats[charName].ult.ult2ID = data.ult2ID
-    groupStats[charName].ult.ult1Cost = data.ult1Cost
-    groupStats[charName].ult.ult2Cost = data.ult2Cost
+    groupStats[charName].ult.ult1ID = _ultInternalIdMap[data.ult1ID]
+    groupStats[charName].ult.ult2ID = _ultInternalIdMap[data.ult2ID]
+    groupStats[charName].ult.ult1Cost = data.ult1Cost * 2
+    groupStats[charName].ult.ult2Cost = data.ult2Cost * 2
     groupStats[charName].ult.ultActivatedSetID = data.ultActivatedSetID
 end
 local function onMessageUltValueUpdateReceived(unitTag, data)
@@ -773,11 +775,14 @@ local function broadcastPlayerUltType()
     if not IsUnitGrouped(localPlayer) then return end
     if not _statsShared[ULT] then return end
 
+    local ult1InternalId = _ultIdMap[playerStats.ult.ult1ID]
+    local ult2InternalId = _ultIdMap[playerStats.ult.ult2ID]
+
     local data = {
-        ult1ID = playerStats.ult.ult1ID,
-        ult2ID = playerStats.ult.ult2ID,
-        ult1Cost = playerStats.ult.ult1Cost,
-        ult2Cost = playerStats.ult.ult2Cost,
+        ult1ID = ult1InternalId,
+        ult2ID = ult2InternalId,
+        ult1Cost = zo_floor(playerStats.ult.ult1Cost / 2),
+        ult2Cost = zo_floor(playerStats.ult.ult2Cost / 2 ),
         ultActivatedSetID = playerStats.ult.ultActivatedSetID
     }
 
@@ -927,14 +932,14 @@ end
 local function unregisterGroupEvents()
     EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED)
     EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_LEFT)
-    EM:UnregisterForEvent(lib_name, EVENT_GROUP_UPDATE)
+    --EM:UnregisterForEvent(lib_name, EVENT_GROUP_UPDATE)
     EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_CONNECTED_STATUS)
     Log("events", LOG_LEVEL_DEBUG, "group events unregistered")
 end
 local function registerGroupEvents()
     EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED, OnGroupChangeDelayed)
     EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_LEFT, OnGroupChangeDelayed)
-    EM:RegisterForEvent(lib_name, EVENT_GROUP_UPDATE, OnGroupChangeDelayed)
+    --EM:RegisterForEvent(lib_name, EVENT_GROUP_UPDATE, OnGroupChangeDelayed)
     EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_CONNECTED_STATUS, OnGroupChangeDelayed)
     Log("events", LOG_LEVEL_DEBUG, "group events registered")
 end
@@ -972,6 +977,44 @@ function lib.RegisterAddon(addonName, neededStats)
     return _CombatStatsObject:New()
 end
 
+--- generate Ultimate ID maps
+local function generateUltIdMaps()
+    _ultInternalIdMap = {}
+    _ultIdMap = {}
+
+    local tempUltimates = {}
+
+    for skillType = 1, GetNumSkillTypes() do
+        for skillLineIndex = 1, GetNumSkillLines(skillType) do
+            for skillIndex = 1, GetNumSkillAbilities(skillType, skillLineIndex) do
+                local isUltimate = IsSkillAbilityUltimate(skillType, skillLineIndex, skillIndex) -- check if skill is ultimate
+                if isUltimate then
+                    local _tempIds = {} -- create temporary table for all sill Ids of each morph
+                    for morph = 0, 2 do -- there is only 1 base rank and 2 morphs
+                        local abilityId, _ = GetSpecificSkillAbilityInfo(skillType, skillLineIndex, skillIndex, morph, 0)
+                        table.insert(_tempIds, abilityId)
+
+                        if abilityId == 0 then _tempIds = {} end -- if the ability Id is 0, clear all previously collected Ids from the temporary table because there is no ultimate without 2 morphs
+                    end
+                    -- iterate over temporary Id table and write it to our final destination
+                    for _, _abilityId in ipairs(_tempIds) do
+                        table.insert(tempUltimates, _abilityId)
+                    end
+                end
+            end
+        end
+    end
+
+    table.sort(tempUltimates)
+
+    for internalID, abilityId in ipairs(tempUltimates) do
+        _ultIdMap[abilityId] = internalID
+        _ultInternalIdMap[internalID] = abilityId
+    end
+
+    _ultInternalIdMap[0] = 0
+    _ultIdMap[0] = 0
+end
 
 --- Addon initialization
 local function onPlayerActivated(_, initial)
