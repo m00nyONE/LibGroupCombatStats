@@ -1002,22 +1002,23 @@ local function onPlayerActivated(_, initial)
 end
 
 --- LibGroupBroadcast
-local function DeclareLGBProtocols()
+local function declareLGBProtocols()
     local CreateNumericField = LGB.CreateNumericField
     local CreateFlagField = LGB.CreateFlagField
 
     local protocolOptions = {
         isRelevantInCombat = true
     }
-
-    local protocolSync = LGB:DeclareProtocol(MESSAGE_ID_SYNC, "LibGroupCombatStats Sync Packet")
+    local handlerId = LGB:RegisterHandler("LibGroupCombatStats", "LibGroupCombatStats")
+    d(handlerId)
+    local protocolSync = LGB:DeclareProtocol(handlerId, MESSAGE_ID_SYNC, "LibGroupCombatStats Sync Packet")
     protocolSync:AddField(CreateFlagField("syncRequest", {
         defaultValue = false,
     }))
     protocolSync:OnData(onMessageSyncReceived)
     protocolSync:Finalize(protocolOptions)
 
-    local protocolDps = LGB:DeclareProtocol(MESSAGE_ID_DPS, "LibGroupCombatStats DPS Share")
+    local protocolDps = LGB:DeclareProtocol(handlerId, MESSAGE_ID_DPS, "LibGroupCombatStats DPS Share")
     protocolDps:AddField(CreateNumericField("dmgType", {
         minValue = 0,
         maxValue = 2,
@@ -1033,7 +1034,7 @@ local function DeclareLGBProtocols()
     protocolDps:OnData(onMessageDpsUpdateReceived)
     protocolDps:Finalize(protocolOptions)
 
-    local protocolHps = LGB:DeclareProtocol(MESSAGE_ID_HPS, "LibGroupCombatStats HPS Share")
+    local protocolHps = LGB:DeclareProtocol(handlerId, MESSAGE_ID_HPS, "LibGroupCombatStats HPS Share")
     protocolHps:AddField(CreateNumericField("overheal", {
         minValue = 0,
         maxValue = 999,
@@ -1045,22 +1046,23 @@ local function DeclareLGBProtocols()
     protocolHps:OnData(onMessageHpsUpdateReceived)
     protocolHps:Finalize(protocolOptions)
 
-    local protocolUltType = LGB:DeclareProtocol(MESSAGE_ID_ULTTYPE, "LibGroupCombatStats Ult Type Share")
+    local protocolUltType = LGB:DeclareProtocol(handlerId, MESSAGE_ID_ULTTYPE, "LibGroupCombatStats Ult Type Share")
     protocolUltType:AddField(CreateNumericField("ult1ID", {
         minValue = 0,
-        maxValue = 2^18-1,
+        maxValue = 127,
+        --maxValue = 2^18-1,
     }))
     protocolUltType:AddField(CreateNumericField("ult2ID", {
         minValue = 0,
-        maxValue = 2^18-1,
+        maxValue = 127,
     }))
     protocolUltType:AddField(CreateNumericField("ult1Cost", {
         minValue = 0,
-        maxValue = 500,
+        maxValue = 250,
     }))
     protocolUltType:AddField(CreateNumericField("ult2Cost", {
         minValue = 0,
-        maxValue = 500,
+        maxValue = 250,
     }))
     protocolUltType:AddField(CreateNumericField("ultActivatedSetID", {
         minValue = 0,
@@ -1069,7 +1071,7 @@ local function DeclareLGBProtocols()
     protocolUltType:OnData(onMessageUltTypeUpdateReceived)
     protocolUltType:Finalize(protocolOptions)
 
-    local protocolUltValue = LGB:DeclareProtocol(MESSAGE_ID_ULTVALUE, "LibGroupCombatStats Ult Value Share")
+    local protocolUltValue = LGB:DeclareProtocol(handlerId, MESSAGE_ID_ULTVALUE, "LibGroupCombatStats Ult Value Share")
     protocolUltValue:AddField(CreateNumericField("ultValue", {
         minValue = 0,
         maxValue = 250,
@@ -1090,12 +1092,13 @@ EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
     if name ~= lib_name then return end
     EM:UnregisterForEvent(lib_name, EVENT_ADD_ON_LOADED)
 
+    generateUltIdMaps()
+    declareLGBProtocols()
+
     -- register onPlayerActivated callback
     EM:UnregisterForEvent(lib_name, EVENT_PLAYER_ACTIVATED)
     EM:RegisterForEvent(lib_name, EVENT_PLAYER_ACTIVATED, onPlayerActivated)
     Log("main", LOG_LEVEL_DEBUG, "Library initialized")
-
-    DeclareLGBProtocols()
 end)
 
 --- cli commands
