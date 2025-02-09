@@ -1149,33 +1149,3 @@ SLASH_COMMANDS["/libGroupCombatStats"] = function(str)
         d(lib_version)
     end
 end
-
-
-
---- debugging & testing
-SLASH_COMMANDS["/libshare"] = function(str)
-    if str == "debug" then
-        lib_debug = true
-
-
-        lib.groupStats = groupStats
-        local instance = lib.RegisterAddon("LibGroupCombatStatsTest", {"ULT", "HPS", "DPS"})
-
-
-        local function logEvent(eventName)
-            LocalEM:RegisterCallback(eventName, function(unitTag, data)
-                Log("event", LOG_LEVEL_INFO, eventName, unitTag, data )
-            end)
-        end
-
-        --logEvent(EVENT_GROUP_DPS_UPDATE)
-        --logEvent(EVENT_GROUP_HPS_UPDATE)
-        --logEvent(EVENT_GROUP_ULT_UPDATE)
-        --logEvent(EVENT_PLAYER_DPS_UPDATE)
-        --logEvent(EVENT_PLAYER_HPS_UPDATE)
-        --logEvent(EVENT_PLAYER_ULT_UPDATE)
-        --logEvent(EVENT_PLAYER_ULT_TYPE_UPDATE)
-        --logEvent(EVENT_PLAYER_ULT_VALUE_UPDATE)
-    end
-end
-
