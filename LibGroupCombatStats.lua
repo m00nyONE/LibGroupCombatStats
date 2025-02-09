@@ -407,17 +407,20 @@ function _CombatStatsObject:GetUnitStats(unitTag)
             ult2Cost = ult.ult2Cost,
             ultActivatedSetID = ult.ultActivatedSetID,
             _lastUpdated = ult._lastUpdated,
+            _lastChanged = ult._lastChanged
         },
         dps = {
             dmgType = dps.dmgType,
             dps = dps.dps,
             dmg = dps.dmg,
             _lastUpdated = dps._lastUpdated,
+            _lastChanged = dps._lastChanged
         },
         hps = {
             hps = hps.hps,
             overheal = hps.overheal,
             _lastUpdated = hps._lastUpdated,
+            _lastChanged = hps._lastChanged
         }
     }
 
@@ -434,7 +437,7 @@ function _CombatStatsObject:GetUnitDPS(unitTag)
         return nil
     end
 
-    return unit.dps.dmgType, unit.dps.dmg, unit.dps.dps, unit.dps._lastUpdated
+    return unit.dps.dmgType, unit.dps.dmg, unit.dps.dps, unit.dps._lastUpdated, unit.dps._lastChanged
 end
 -- Retrieves HPS information for a specific unit in the group
 -- @param unitTag (string): The unitTag of the group member
@@ -447,7 +450,7 @@ function _CombatStatsObject:GetUnitHPS(unitTag)
         return nil
     end
 
-    return unit.hps.overheal, unit.hps.hps, unit.hps._lastUpdated
+    return unit.hps.overheal, unit.hps.hps, unit.hps._lastUpdated, unit.hps._lastChanged
 end
 -- Retrieves ultimate information for a specific unit in the group
 -- @param unitTag (string): The unitTag of the group member
@@ -461,7 +464,7 @@ function _CombatStatsObject:GetUnitULT(unitTag)
         return nil
     end
 
-    return unit.ult.ultValue, unit.ult.ult1ID, unit.ult.ult1Cost, unit.ult.ult2ID, unit.ult.ult2Cost, unit.ult.ultActivatedSetID, unit.ult._lastUpdated
+    return unit.ult.ultValue, unit.ult.ult1ID, unit.ult.ult1Cost, unit.ult.ult2ID, unit.ult.ult2Cost, unit.ult.ultActivatedSetID, unit.ult._lastUpdated, unit.ult._lastChanged
 end
 -- Registers a callback function for a specified event
 -- @param eventName (string): The name of the event to register for

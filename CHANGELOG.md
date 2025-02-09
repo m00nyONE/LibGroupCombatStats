@@ -1,3 +1,10 @@
+## 2025.02.09
+- update to new LGB API
+- compress ultIDs, ultCost more
+- all communication is now async
+- performance improvements
+- adding _lastUpdated & _lastChanged fields
+
 ## 2025.01.27
 - performance improvements
 - only register updates when stats are requested by an addon
