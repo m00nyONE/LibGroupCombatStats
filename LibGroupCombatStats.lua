@@ -99,11 +99,11 @@ end
 --- constants
 local localPlayer = "player"
 
-local MESSAGE_ID_SYNC = 9
-local MESSAGE_ID_ULTTYPE = 10
-local MESSAGE_ID_ULTVALUE = 11
-local MESSAGE_ID_DPS = 12
-local MESSAGE_ID_HPS = 13
+local MESSAGE_ID_ULTTYPE = 20
+local MESSAGE_ID_ULTVALUE = 21
+local MESSAGE_ID_DPS = 22
+local MESSAGE_ID_HPS = 23
+local MESSAGE_ID_SYNC = 24
 
 local PLAYER_ULT_VALUE_UPDATE_INTERVAL = 1000
 local PLAYER_DPS_UPDATE_INTERVAL = 1000
@@ -737,7 +737,7 @@ local function onMessageDpsUpdateReceived_V2(unitTag, data) toNewToProcessWarnin
 local function onMessageHpsUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
 
 
---- periodically sent broadcast messages
+--- send broadcast messages
 local function broadcastPlayerDps(_, force)
     if not IsUnitGrouped(localPlayer) then return end
     if not _statsShared[DPS] then return end
@@ -1022,29 +1022,30 @@ end
 --- Addon initialization
 local function onPlayerActivated(_, initial)
    -- check if it's the first call of onPlayerActivated - for example after logging in or after a reloadui
-    if not _isFirstOnPlayerActivated then return end
+    if _isFirstOnPlayerActivated then
+        Log("debug", LOG_LEVEL_DEBUG, "onPlayerActivated called")
 
-    Log("debug", LOG_LEVEL_DEBUG, "onPlayerActivated called")
+        -- trigger group update
+        OnGroupChangeDelayed()
 
-    -- trigger group update
-    OnGroupChangeDelayed()
+        -- register group update events
+        unregisterGroupEvents()
+        registerGroupEvents()
+
+        -- register update functions for values
+        unregisterPlayerStatsUpdateFunctions()
+        registerPlayerStatsUpdateFunctions()
+
+        -- set player ult & sets
+        updatePlayerSlottedUlts()
+        updatePlayerUltActivatedSets()
+
+        _isFirstOnPlayerActivated = false
+    end
 
     -- request sync from group members
     broadcastSyncRequest()
 
-    -- register group update events
-    unregisterGroupEvents()
-    registerGroupEvents()
-
-    -- register update functions for values
-    unregisterPlayerStatsUpdateFunctions()
-    registerPlayerStatsUpdateFunctions()
-
-    -- set player ult & sets
-    updatePlayerSlottedUlts()
-    updatePlayerUltActivatedSets()
-
-    _isFirstOnPlayerActivated = false
 end
 
 --- LibGroupBroadcast
@@ -1055,43 +1056,9 @@ local function declareLGBProtocols()
     local protocolOptions = {
         isRelevantInCombat = true
     }
-    local handlerId = LGB:RegisterHandler("LibGroupCombatStats", "LibGroupCombatStats")
-    local protocolSync = LGB:DeclareProtocol(handlerId, MESSAGE_ID_SYNC, "LibGroupCombatStats Sync Packet")
-    protocolSync:AddField(CreateFlagField("syncRequest", {
-        defaultValue = false,
-    }))
-    protocolSync:OnData(onMessageSyncReceived)
-    protocolSync:Finalize(protocolOptions)
+    local handlerId = LGB:RegisterHandler("LibGroupCombatStats")
 
-    local protocolDps = LGB:DeclareProtocol(handlerId, MESSAGE_ID_DPS, "LibGroupCombatStats DPS Share")
-    protocolDps:AddField(CreateNumericField("dmgType", {
-        minValue = 0,
-        maxValue = 2,
-    }))
-    protocolDps:AddField(CreateNumericField("dmg", {
-        minValue = 0,
-        maxValue = 9999,
-    }))
-    protocolDps:AddField(CreateNumericField("dps", {
-        minValue = 0,
-        maxValue = 999,
-    }))
-    protocolDps:OnData(onMessageDpsUpdateReceived)
-    protocolDps:Finalize(protocolOptions)
-
-    local protocolHps = LGB:DeclareProtocol(handlerId, MESSAGE_ID_HPS, "LibGroupCombatStats HPS Share")
-    protocolHps:AddField(CreateNumericField("overheal", {
-        minValue = 0,
-        maxValue = 999,
-    }))
-    protocolHps:AddField(CreateNumericField("hps", {
-        minValue = 0,
-        maxValue = 999,
-    }))
-    protocolHps:OnData(onMessageHpsUpdateReceived)
-    protocolHps:Finalize(protocolOptions)
-
-    local protocolUltType = LGB:DeclareProtocol(handlerId, MESSAGE_ID_ULTTYPE, "LibGroupCombatStats Ult Type Share")
+    local protocolUltType = LGB:DeclareProtocol(handlerId, MESSAGE_ID_ULTTYPE, "UltType")
     protocolUltType:AddField(CreateNumericField("ult1ID", {
         minValue = 0,
         maxValue = 127,
@@ -1116,7 +1083,7 @@ local function declareLGBProtocols()
     protocolUltType:OnData(onMessageUltTypeUpdateReceived)
     protocolUltType:Finalize(protocolOptions)
 
-    local protocolUltValue = LGB:DeclareProtocol(handlerId, MESSAGE_ID_ULTVALUE, "LibGroupCombatStats Ult Value Share")
+    local protocolUltValue = LGB:DeclareProtocol(handlerId, MESSAGE_ID_ULTVALUE, "UltValue")
     protocolUltValue:AddField(CreateNumericField("ultValue", {
         minValue = 0,
         maxValue = 250,
@@ -1124,11 +1091,47 @@ local function declareLGBProtocols()
     protocolUltValue:OnData(onMessageUltValueUpdateReceived)
     protocolUltValue:Finalize(protocolOptions)
 
-    _LGBProtocols[MESSAGE_ID_SYNC] = protocolSync
-    _LGBProtocols[MESSAGE_ID_DPS] = protocolDps
-    _LGBProtocols[MESSAGE_ID_HPS] = protocolHps
+    local protocolDps = LGB:DeclareProtocol(handlerId, MESSAGE_ID_DPS, "Dps")
+    protocolDps:AddField(CreateNumericField("dmgType", {
+        minValue = 0,
+        maxValue = 2,
+    }))
+    protocolDps:AddField(CreateNumericField("dmg", {
+        minValue = 0,
+        maxValue = 9999,
+    }))
+    protocolDps:AddField(CreateNumericField("dps", {
+        minValue = 0,
+        maxValue = 999,
+    }))
+    protocolDps:OnData(onMessageDpsUpdateReceived)
+    protocolDps:Finalize(protocolOptions)
+
+    local protocolHps = LGB:DeclareProtocol(handlerId, MESSAGE_ID_HPS, "Hps")
+    protocolHps:AddField(CreateNumericField("overheal", {
+        minValue = 0,
+        maxValue = 999,
+    }))
+    protocolHps:AddField(CreateNumericField("hps", {
+        minValue = 0,
+        maxValue = 999,
+    }))
+    protocolHps:OnData(onMessageHpsUpdateReceived)
+    protocolHps:Finalize(protocolOptions)
+
+    local protocolSync = LGB:DeclareProtocol(handlerId, MESSAGE_ID_SYNC, "LGCSSyncPacket")
+    protocolSync:AddField(CreateFlagField("syncRequest", {
+        defaultValue = false,
+    }))
+    protocolSync:OnData(onMessageSyncReceived)
+    protocolSync:Finalize(protocolOptions)
+
+
     _LGBProtocols[MESSAGE_ID_ULTTYPE] = protocolUltType
     _LGBProtocols[MESSAGE_ID_ULTVALUE] = protocolUltValue
+    _LGBProtocols[MESSAGE_ID_DPS] = protocolDps
+    _LGBProtocols[MESSAGE_ID_HPS] = protocolHps
+    _LGBProtocols[MESSAGE_ID_SYNC] = protocolSync
 end
 
 

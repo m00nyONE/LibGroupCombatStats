@@ -1,3 +1,6 @@
+## 2025.02.10
+- finalize LGB Protocol
+
 ## 2025.02.09
 - update to new LGB API
 - compress ultIDs, ultCost more

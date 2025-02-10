@@ -3,19 +3,10 @@
 ## Version: dev
 ## Author: |c76c3f4@m00nyONE|r
 ## APIVersion: 101044
-## AddOnVersion: 00000000
+## AddOnVersion: 99999999
 ## IsLibrary: true
 ## DependsOn: LibCombat>=54 LibGroupBroadcast
 ## OptionalDependsOn: LibDebugLogger>=180
-####### LibAddonMenu-2.0>=32
-
 
 # Core Library
 LibGroupCombatStats.lua
-
-
-# tests
-test/mock.lua
-test/ult.lua
-test/dps.lua
-
