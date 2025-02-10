@@ -46,6 +46,7 @@ local EM = EVENT_MANAGER
 local LocalEM = ZO_CallbackObject:New()
 local strmatch = string.match
 local _isFirstOnPlayerActivated = true
+local _LGBHandler = {}
 local _LGBProtocols = {}
 local _registeredAddons = {}
 local _statsShared = {
@@ -809,6 +810,7 @@ end
 --- sync after reloadui logic
 local function onEventUIReloadReceived(unitTag, _)
     if AreUnitsEqual(unitTag, localPlayer) then return end
+    if not IsUnitGrouped(localPlayer) then return end
 
     zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
     zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
@@ -919,8 +921,10 @@ local function OnGroupChange()
 end
 local function OnGroupChangeDelayed()
     zo_callLater(OnGroupChange, 500) -- wait 500ms to avoid any race conditions
-    zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
-    zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
+    if IsUnitGrouped(localPlayer) then
+        zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+        zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
+    end
 end
 local function unregisterGroupEvents()
     EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED)
@@ -1037,14 +1041,13 @@ end
 --- LibGroupBroadcast
 local function declareLGBProtocols()
     local CreateNumericField = LGB.CreateNumericField
-    local CreateFlagField = LGB.CreateFlagField
 
     local protocolOptions = {
         isRelevantInCombat = true
     }
-    local handlerId = LGB:RegisterHandler("LibGroupCombatStats")
+    local handler = LGB:RegisterHandler("LibGroupCombatStats")
 
-    local protocolUltType = LGB:DeclareProtocol(handlerId, MESSAGE_ID_ULTTYPE, "UltType")
+    local protocolUltType = handler:DeclareProtocol(MESSAGE_ID_ULTTYPE, "UltType")
     protocolUltType:AddField(CreateNumericField("ult1ID", {
         minValue = 0,
         maxValue = 127,
@@ -1069,7 +1072,7 @@ local function declareLGBProtocols()
     protocolUltType:OnData(onMessageUltTypeUpdateReceived)
     protocolUltType:Finalize(protocolOptions)
 
-    local protocolUltValue = LGB:DeclareProtocol(handlerId, MESSAGE_ID_ULTVALUE, "UltValue")
+    local protocolUltValue = handler:DeclareProtocol(MESSAGE_ID_ULTVALUE, "UltValue")
     protocolUltValue:AddField(CreateNumericField("ultValue", {
         minValue = 0,
         maxValue = 250,
@@ -1077,7 +1080,7 @@ local function declareLGBProtocols()
     protocolUltValue:OnData(onMessageUltValueUpdateReceived)
     protocolUltValue:Finalize(protocolOptions)
 
-    local protocolDps = LGB:DeclareProtocol(handlerId, MESSAGE_ID_DPS, "Dps")
+    local protocolDps = handler:DeclareProtocol(MESSAGE_ID_DPS, "Dps")
     protocolDps:AddField(CreateNumericField("dmgType", {
         minValue = 0,
         maxValue = 2,
@@ -1093,7 +1096,7 @@ local function declareLGBProtocols()
     protocolDps:OnData(onMessageDpsUpdateReceived)
     protocolDps:Finalize(protocolOptions)
 
-    local protocolHps = LGB:DeclareProtocol(handlerId, MESSAGE_ID_HPS, "Hps")
+    local protocolHps = handler:DeclareProtocol(MESSAGE_ID_HPS, "Hps")
     protocolHps:AddField(CreateNumericField("overheal", {
         minValue = 0,
         maxValue = 999,
@@ -1106,14 +1109,15 @@ local function declareLGBProtocols()
     protocolHps:Finalize(protocolOptions)
 
 
+    _LGBHandler = handler
     _LGBProtocols[MESSAGE_ID_ULTTYPE] = protocolUltType
     _LGBProtocols[MESSAGE_ID_ULTVALUE] = protocolUltValue
     _LGBProtocols[MESSAGE_ID_DPS] = protocolDps
     _LGBProtocols[MESSAGE_ID_HPS] = protocolHps
 end
 local function registerForUIReload()
-    local UIReload = LGB:GetHandlerApi("UIReload")
-    UIReload:RegisterForUIReload(onEventUIReloadReceived)
+    local handler = LGB:GetHandlerApi("UIReload")
+    handler:RegisterForUIReload(onEventUIReloadReceived)
 end
 
 --- register the addon
@@ -1135,5 +1139,32 @@ end)
 SLASH_COMMANDS["/libGroupCombatStats"] = function(str)
     if str == "version" then
         d(lib_version)
+    end
+end
+
+--- debugging & testing
+SLASH_COMMANDS["/libshare"] = function(str)
+    if str == "debug" then
+        lib_debug = true
+
+
+        lib.groupStats = groupStats
+        local instance = lib.RegisterAddon("LibGroupCombatStatsTest", {"ULT", "HPS", "DPS"})
+
+
+        local function logEvent(eventName)
+            LocalEM:RegisterCallback(eventName, function(unitTag, data)
+                Log("event", LOG_LEVEL_INFO, eventName, unitTag, data )
+            end)
+        end
+
+        --logEvent(EVENT_GROUP_DPS_UPDATE)
+        --logEvent(EVENT_GROUP_HPS_UPDATE)
+        --logEvent(EVENT_GROUP_ULT_UPDATE)
+        --logEvent(EVENT_PLAYER_DPS_UPDATE)
+        --logEvent(EVENT_PLAYER_HPS_UPDATE)
+        --logEvent(EVENT_PLAYER_ULT_UPDATE)
+        --logEvent(EVENT_PLAYER_ULT_TYPE_UPDATE)
+        --logEvent(EVENT_PLAYER_ULT_VALUE_UPDATE)
     end
 end
