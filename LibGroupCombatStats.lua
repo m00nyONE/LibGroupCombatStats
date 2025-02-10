@@ -806,22 +806,12 @@ local function onPlayerUltTypeUpdate(unitTag, _)
 end
 
 
---- sync packet logic
-local function broadcastSyncRequest()
-    if not IsUnitGrouped(localPlayer) then return end
-    _LGBProtocols[MESSAGE_ID_SYNC]:Send({
-        syncRequest = true
-    })
-end
-local function onMessageSyncReceived(unitTag, data)
+--- sync after reloadui logic
+local function onEventUIReloadReceived(unitTag, _)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
-    if data.syncRequest then
-        broadcastPlayerUltType()
-        broadcastPlayerUltValue(_, true)
-        broadcastPlayerDps(_, true)
-        broadcastPlayerHps(_, true)
-    end
+    zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+    zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
 end
 
 
@@ -1022,30 +1012,26 @@ end
 --- Addon initialization
 local function onPlayerActivated(_, initial)
    -- check if it's the first call of onPlayerActivated - for example after logging in or after a reloadui
-    if _isFirstOnPlayerActivated then
-        Log("debug", LOG_LEVEL_DEBUG, "onPlayerActivated called")
+    if not _isFirstOnPlayerActivated then return end
 
-        -- trigger group update
-        OnGroupChangeDelayed()
+    Log("debug", LOG_LEVEL_DEBUG, "onPlayerActivated called")
 
-        -- register group update events
-        unregisterGroupEvents()
-        registerGroupEvents()
+    -- trigger group update
+    OnGroupChangeDelayed()
 
-        -- register update functions for values
-        unregisterPlayerStatsUpdateFunctions()
-        registerPlayerStatsUpdateFunctions()
+    -- register group update events
+    unregisterGroupEvents()
+    registerGroupEvents()
 
-        -- set player ult & sets
-        updatePlayerSlottedUlts()
-        updatePlayerUltActivatedSets()
+    -- register update functions for values
+    unregisterPlayerStatsUpdateFunctions()
+    registerPlayerStatsUpdateFunctions()
 
-        _isFirstOnPlayerActivated = false
-    end
+    -- set player ult & sets
+    updatePlayerSlottedUlts()
+    updatePlayerUltActivatedSets()
 
-    -- request sync from group members
-    broadcastSyncRequest()
-
+    _isFirstOnPlayerActivated = false
 end
 
 --- LibGroupBroadcast
@@ -1119,21 +1105,16 @@ local function declareLGBProtocols()
     protocolHps:OnData(onMessageHpsUpdateReceived)
     protocolHps:Finalize(protocolOptions)
 
-    local protocolSync = LGB:DeclareProtocol(handlerId, MESSAGE_ID_SYNC, "LGCSSyncPacket")
-    protocolSync:AddField(CreateFlagField("syncRequest", {
-        defaultValue = false,
-    }))
-    protocolSync:OnData(onMessageSyncReceived)
-    protocolSync:Finalize(protocolOptions)
-
 
     _LGBProtocols[MESSAGE_ID_ULTTYPE] = protocolUltType
     _LGBProtocols[MESSAGE_ID_ULTVALUE] = protocolUltValue
     _LGBProtocols[MESSAGE_ID_DPS] = protocolDps
     _LGBProtocols[MESSAGE_ID_HPS] = protocolHps
-    _LGBProtocols[MESSAGE_ID_SYNC] = protocolSync
 end
-
+local function registerForUIReload()
+    local UIReload = LGB:GetHandlerApi("UIReload")
+    UIReload:RegisterForUIReload(onEventUIReloadReceived)
+end
 
 --- register the addon
 EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
@@ -1142,6 +1123,7 @@ EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
 
     generateUltIdMaps()
     declareLGBProtocols()
+    registerForUIReload()
 
     -- register onPlayerActivated callback
     EM:UnregisterForEvent(lib_name, EVENT_PLAYER_ACTIVATED)
