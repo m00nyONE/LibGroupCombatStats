@@ -5,8 +5,8 @@
 ## APIVersion: 101044
 ## AddOnVersion: 99999999
 ## IsLibrary: true
-## DependsOn: LibCombat>=54 LibGroupBroadcast>=71 LibGroupUIReload>=71
-## OptionalDependsOn: LibDebugLogger>=180
+## DependsOn: LibCombat>=54 LibGroupBroadcast>=71
+## OptionalDependsOn: LibDebugLogger>=180 LibGroupUIReload>=71 LibGroupBroadcastUIReload>=71
 
 ; This Add-on is not created by, affiliated with or sponsored by ZeniMax Media Inc. or its affiliates.
 ; The Elder Scrolls® and related logos are registered trademarks or trademarks of ZeniMax Media Inc. in the United States and/or other countries.
