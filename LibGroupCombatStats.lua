@@ -46,6 +46,7 @@ local EM = EVENT_MANAGER
 local LocalEM = ZO_CallbackObject:New()
 local strmatch = string.match
 local _isFirstOnPlayerActivated = true
+local _sendSyncRequest = true
 local _LGBHandler = {}
 local _LGBProtocols = {}
 local _registeredAddons = {}
@@ -489,7 +490,6 @@ function _CombatStatsObject:UnregisterForEvent(eventName, callback)
 end
 
 
-
 --- Combat extension ( stolen from HodorReflexes - thanks andy.s <3 )
 local LC = LibCombat
 local combat = {}
@@ -685,59 +685,6 @@ local function registerPlayerStatsUpdateFunctions()
 end
 
 
---- receiving broadcast callbacks
-local function toNewToProcessWarning()
-    Log("events", LOG_LEVEL_WARNING, "someone is trying to send you newer data than you can process with " .. lib_name .. ": " .. lib_version .. ". Please check if there is a newer version available and install it")
-end
-
-local function onMessageUltTypeUpdateReceived(unitTag, data)
-    if AreUnitsEqual(unitTag, localPlayer) then return end
-
-    local charName = GetUnitName(unitTag)
-    if not groupStats[charName] then return end
-
-    groupStats[charName].ult.ult1ID = _ultInternalIdMap[data.ult1ID]
-    groupStats[charName].ult.ult2ID = _ultInternalIdMap[data.ult2ID]
-    groupStats[charName].ult.ult1Cost = data.ult1Cost * 2
-    groupStats[charName].ult.ult2Cost = data.ult2Cost * 2
-    groupStats[charName].ult.ultActivatedSetID = data.ultActivatedSetID
-end
-local function onMessageUltValueUpdateReceived(unitTag, data)
-    if AreUnitsEqual(unitTag, localPlayer) then return end
-
-    local charName = GetUnitName(unitTag)
-    if not groupStats[charName] then return end
-
-    data.ultValue = data.ultValue * 2
-
-    groupStats[charName].ult.ultValue = data.ultValue
-end
-local function onMessageDpsUpdateReceived(unitTag, data)
-    if AreUnitsEqual(unitTag, localPlayer) then return end
-
-    local charName = GetUnitName(unitTag)
-    if not groupStats[charName] then return end
-
-    groupStats[charName].dps.dmgType = data.dmgType
-    groupStats[charName].dps.dmg = data.dmg
-    groupStats[charName].dps.dps = data.dps
-end
-local function onMessageHpsUpdateReceived(unitTag, data)
-    if AreUnitsEqual(unitTag, localPlayer) then return end
-
-    local charName = GetUnitName(unitTag)
-    if not groupStats[charName] then return end
-
-    groupStats[charName].hps.overheal = data.overheal
-    groupStats[charName].hps.hps = data.hps
-end
-
-local function onMessageUltTypeUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
-local function onMessageUltValueUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
-local function onMessageDpsUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
-local function onMessageHpsUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
-
-
 --- send broadcast messages
 local function broadcastPlayerDps(_, force)
     if not IsUnitGrouped(localPlayer) then return end
@@ -787,8 +734,11 @@ local function broadcastPlayerUltType()
         ult2ID = ult2InternalId,
         ult1Cost = zo_floor(playerStats.ult.ult1Cost / 2),
         ult2Cost = zo_floor(playerStats.ult.ult2Cost / 2 ),
-        ultActivatedSetID = playerStats.ult.ultActivatedSetID
+        ultActivatedSetID = playerStats.ult.ultActivatedSetID,
+        syncRequest = _sendSyncRequest
     }
+
+    _sendSyncRequest = false
 
     _LGBProtocols[MESSAGE_ID_ULTTYPE]:Send(data)
 end
@@ -806,15 +756,69 @@ local function onPlayerUltTypeUpdate(unitTag, _)
     playerUltTypeObservableTable.lastChange = GetGameTimeMilliseconds()
 end
 
-
---- sync after reloadui logic
-local function onEventUIReloadReceived(unitTag, _)
+local function onSyncRequestReceived(unitTag, _)
     if AreUnitsEqual(unitTag, localPlayer) then return end
     if not IsUnitGrouped(localPlayer) then return end
 
-    zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+    zo_callLater(function() broadcastPlayerUltType() end, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
     zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
 end
+
+--- receiving broadcast callbacks
+local function toNewToProcessWarning()
+    Log("events", LOG_LEVEL_WARNING, "someone is trying to send you newer data than you can process with " .. lib_name .. ": " .. lib_version .. ". Please check if there is a newer version available and install it")
+end
+
+local function onMessageUltTypeUpdateReceived(unitTag, data)
+    if AreUnitsEqual(unitTag, localPlayer) then return end
+
+    if data.syncRequest then
+        onSyncRequestReceived()
+    end
+
+    local charName = GetUnitName(unitTag)
+    if not groupStats[charName] then return end
+
+    groupStats[charName].ult.ult1ID = _ultInternalIdMap[data.ult1ID]
+    groupStats[charName].ult.ult2ID = _ultInternalIdMap[data.ult2ID]
+    groupStats[charName].ult.ult1Cost = data.ult1Cost * 2
+    groupStats[charName].ult.ult2Cost = data.ult2Cost * 2
+    groupStats[charName].ult.ultActivatedSetID = data.ultActivatedSetID
+end
+local function onMessageUltValueUpdateReceived(unitTag, data)
+    if AreUnitsEqual(unitTag, localPlayer) then return end
+
+    local charName = GetUnitName(unitTag)
+    if not groupStats[charName] then return end
+
+    data.ultValue = data.ultValue * 2
+
+    groupStats[charName].ult.ultValue = data.ultValue
+end
+local function onMessageDpsUpdateReceived(unitTag, data)
+    if AreUnitsEqual(unitTag, localPlayer) then return end
+
+    local charName = GetUnitName(unitTag)
+    if not groupStats[charName] then return end
+
+    groupStats[charName].dps.dmgType = data.dmgType
+    groupStats[charName].dps.dmg = data.dmg
+    groupStats[charName].dps.dps = data.dps
+end
+local function onMessageHpsUpdateReceived(unitTag, data)
+    if AreUnitsEqual(unitTag, localPlayer) then return end
+
+    local charName = GetUnitName(unitTag)
+    if not groupStats[charName] then return end
+
+    groupStats[charName].hps.overheal = data.overheal
+    groupStats[charName].hps.hps = data.hps
+end
+
+local function onMessageUltTypeUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
+local function onMessageUltValueUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
+local function onMessageDpsUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
+local function onMessageHpsUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
 
 
 --- enable / disable broadcasting of stats
@@ -922,7 +926,7 @@ end
 local function OnGroupChangeDelayed()
     zo_callLater(OnGroupChange, 500) -- wait 500ms to avoid any race conditions
     if IsUnitGrouped(localPlayer) then
-        zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+        zo_callLater(function() broadcastPlayerUltType() end, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
         zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
     end
 end
@@ -1041,6 +1045,7 @@ end
 --- LibGroupBroadcast
 local function declareLGBProtocols()
     local CreateNumericField = LGB.CreateNumericField
+    local CreateFlagField = LGB.CreateFlagField
 
     local protocolOptions = {
         isRelevantInCombat = true
@@ -1068,6 +1073,9 @@ local function declareLGBProtocols()
     protocolUltType:AddField(CreateNumericField("ultActivatedSetID", {
         minValue = 0,
         maxValue = 2^4-1,
+    }))
+    protocolUltType:AddField(CreateFlagField("syncRequest", {
+        defaultValue = false,
     }))
     protocolUltType:OnData(onMessageUltTypeUpdateReceived)
     protocolUltType:Finalize(protocolOptions)
@@ -1115,10 +1123,6 @@ local function declareLGBProtocols()
     _LGBProtocols[MESSAGE_ID_DPS] = protocolDps
     _LGBProtocols[MESSAGE_ID_HPS] = protocolHps
 end
-local function registerForUIReload()
-    local handler = LGB:GetHandlerApi("UIReload")
-    handler:RegisterForUIReload(onEventUIReloadReceived)
-end
 
 --- register the addon
 EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
@@ -1127,7 +1131,6 @@ EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
 
     generateUltIdMaps()
     declareLGBProtocols()
-    registerForUIReload()
 
     -- register onPlayerActivated callback
     EM:UnregisterForEvent(lib_name, EVENT_PLAYER_ACTIVATED)
