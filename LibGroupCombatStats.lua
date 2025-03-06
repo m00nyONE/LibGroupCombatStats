@@ -760,7 +760,7 @@ local function onSyncRequestReceived(unitTag, _)
     if AreUnitsEqual(unitTag, localPlayer) then return end
     if not IsUnitGrouped(localPlayer) then return end
 
-    zo_callLater(function() broadcastPlayerUltType() end, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+    zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
     zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
 end
 
@@ -926,7 +926,7 @@ end
 local function OnGroupChangeDelayed()
     zo_callLater(OnGroupChange, 500) -- wait 500ms to avoid any race conditions
     if IsUnitGrouped(localPlayer) then
-        zo_callLater(function() broadcastPlayerUltType() end, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+        zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
         zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
     end
 end
@@ -1138,36 +1138,37 @@ EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
     Log("main", LOG_LEVEL_DEBUG, "Library initialized")
 end)
 
+
 --- cli commands
-SLASH_COMMANDS["/libGroupCombatStats"] = function(str)
-    if str == "version" then
-        d(lib_version)
-    end
+local function lgcs_version()
+    d(lib_version)
 end
 
---- debugging & testing
-SLASH_COMMANDS["/libshare"] = function(str)
-    if str == "debug" then
-        lib_debug = true
+local function lgcs_test()
+    lib_debug = true
 
 
-        lib.groupStats = groupStats
-        local instance = lib.RegisterAddon("LibGroupCombatStatsTest", {"ULT", "HPS", "DPS"})
+    lib.groupStats = groupStats
+    local instance = lib.RegisterAddon("LibGroupCombatStatsTest", {"ULT", "HPS", "DPS"})
 
 
-        local function logEvent(eventName)
-            LocalEM:RegisterCallback(eventName, function(unitTag, data)
-                Log("event", LOG_LEVEL_INFO, eventName, unitTag, data )
-            end)
-        end
-
-        --logEvent(EVENT_GROUP_DPS_UPDATE)
-        --logEvent(EVENT_GROUP_HPS_UPDATE)
-        --logEvent(EVENT_GROUP_ULT_UPDATE)
-        --logEvent(EVENT_PLAYER_DPS_UPDATE)
-        --logEvent(EVENT_PLAYER_HPS_UPDATE)
-        --logEvent(EVENT_PLAYER_ULT_UPDATE)
-        --logEvent(EVENT_PLAYER_ULT_TYPE_UPDATE)
-        --logEvent(EVENT_PLAYER_ULT_VALUE_UPDATE)
+    local function logEvent(eventName)
+        LocalEM:RegisterCallback(eventName, function(unitTag, data)
+            Log("event", LOG_LEVEL_INFO, eventName, unitTag, data )
+        end)
     end
+
+    logEvent(EVENT_GROUP_DPS_UPDATE)
+    logEvent(EVENT_GROUP_HPS_UPDATE)
+    logEvent(EVENT_GROUP_ULT_UPDATE)
+    logEvent(EVENT_PLAYER_DPS_UPDATE)
+    logEvent(EVENT_PLAYER_HPS_UPDATE)
+    logEvent(EVENT_PLAYER_ULT_UPDATE)
+    --logEvent(EVENT_PLAYER_ULT_TYPE_UPDATE)
+    --logEvent(EVENT_PLAYER_ULT_VALUE_UPDATE)
+end
+
+SLASH_COMMANDS["/libGroupCombatStats"] = function(str)
+    if str == "version" then lgcs_version()
+    elseif str == "test" then lgcs_test() end
 end

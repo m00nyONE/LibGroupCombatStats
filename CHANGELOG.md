@@ -1,3 +1,9 @@
+## 2025.03.06
+- include syncRequest after reloadui
+- remove unneeded dependencies
+- add /lgcs test
+- code cleanup
+
 ## 2025.02.10
 - finalize LGB Protocol
 
