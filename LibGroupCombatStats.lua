@@ -497,7 +497,7 @@ local LIBCOMBAT_CALLBACK_NAME = lib_name .. "_Combat"
 local combatData = {
     DPSOut = 0,
     HPSOut = 0,
-    HPSAOut = 0,
+    OHPSOut = 0,
     dpstime = 0,
     hpstime = 0,
     bossfight = false,
@@ -505,7 +505,7 @@ local combatData = {
 }
 
 function combat.InitData()
-    combatData = {DPSOut = 0, HPSOut = 0, HPSAOut = 0, dpstime = 0, hpstime = 0, bossfight = false, units = {}}
+    combatData = {DPSOut = 0, HPSOut = 0, OHPSOut = 0, dpstime = 0, hpstime = 0, bossfight = false, units = {}}
 end
 function combat.UnitsCallback(_, units)
     combatData.units = units
@@ -513,7 +513,7 @@ end
 function combat.FightRecapCallback(_, data)
     combatData.DPSOut = data.DPSOut
     combatData.HPSOut = data.HPSOut
-    combatData.HPSAOut = data.HPSAOut
+    combatData.OHPSOut = data.OHPSOut
     combatData.dpstime = data.dpstime
     combatData.hpstime = data.hpstime
     combatData.bossfight = data.bossfight
@@ -615,11 +615,11 @@ local function updatePlayerHps()
 
     local data = combat.GetData()
 
-    if data.HPSOut == 0 or data.HPSAOut == 0 then
+    if data.HPSOut == 0 or data.OHPSOut == 0 then
         overheal, hps = 0, 0
     end
 
-    playerStats.hps.overheal = zo_floor(data.HPSAOut / 1000)
+    playerStats.hps.overheal = zo_floor(data.OHPSOut / 1000)
     playerStats.hps.hps = zo_floor(data.HPSOut / 1000 )
 end
 local function updatePlayerSlottedUlts()
