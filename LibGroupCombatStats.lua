@@ -1052,6 +1052,8 @@ local function declareLGBProtocols()
         isRelevantInCombat = true
     }
     local handler = LGB:RegisterHandler("LibGroupCombatStats")
+    handler:SetDisplayName("Group Combat Stats")
+    handler:SetDescription("Shares combat related data with group members.")
 
     local protocolUltType = handler:DeclareProtocol(MESSAGE_ID_ULTTYPE, "UltType")
     protocolUltType:AddField(CreateNumericField("ult1ID", {
