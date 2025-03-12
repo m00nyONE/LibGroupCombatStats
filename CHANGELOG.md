@@ -1,3 +1,7 @@
+## 2025.03.12
+- api refinement
+- add LGB description for Menu
+
 ## 2025.03.06
 - include syncRequest after reloadui
 - remove unneeded dependencies
