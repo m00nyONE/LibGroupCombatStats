@@ -1212,7 +1212,10 @@ local function lgcs_test()
     --logEvent(EVENT_PLAYER_ULT_VALUE_UPDATE)
 end
 
-SLASH_COMMANDS["/libGroupCombatStats"] = function(str)
+local function slashCommands(str)
     if str == "version" then lgcs_version()
     elseif str == "test" then lgcs_test() end
 end
+
+SLASH_COMMANDS["/LibGroupCombatStats"] = slashCommands
+SLASH_COMMANDS["/lgcs"] = slashCommands
