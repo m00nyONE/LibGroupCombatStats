@@ -1,6 +1,11 @@
 ## 2025.03.12
+- dump dependencies:
+  - LibCombat>=79
+  - LibGroupBroadcast>=88
+- merging https://github.com/m00nyONE/LibGroupCombatStats/pull/1 from @M0RGaming fixing an issue with the newest LibCombat api change in version 79
+- merging https://github.com/m00nyONE/LibGroupCombatStats/pull/2 from @Treuce adding sanity checks for LibCombat to avoid these issues in the future
 - api refinement
-- add LGB description for Menu
+- add LGB description for Addon menu
 
 ## 2025.03.06
 - include syncRequest after reloadui
