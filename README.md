@@ -342,14 +342,14 @@ Retrieves ultimate information for a specific unit.
 - **table** ult:
 ```lua
 ult = {
-    ultValue = number, -- Current ultimate value
-    ult1ID = number, -- Ultimate 1 ID
-    ult2ID = number, -- Ultimate 2 ID
-    ult1Cost = number, -- Ultimate 1 cost
-    ult2Cost = number, -- Ultimate 2 cost
-    ultActivatedSetId = number, -- Ultimate activated set ID. -- see `LibGroupCombatStats.ULT_ACTIVATED_SET_LIST` for more info
-    _lastUpdated = timestamp, -- timestamp of the last update
-    _lastChanged = timestamp, -- timestamp of the last value change
+  ultValue = number, -- Current ultimate value
+  ult1ID = number, -- Ultimate 1 ID
+  ult2ID = number, -- Ultimate 2 ID
+  ult1Cost = number, -- Ultimate 1 cost
+  ult2Cost = number, -- Ultimate 2 cost
+  ultActivatedSetId = number, -- Ultimate activated set ID. -- see `LibGroupCombatStats.ULT_ACTIVATED_SET_LIST` for more info
+  _lastUpdated = timestamp, -- timestamp of the last update
+  _lastChanged = timestamp, -- timestamp of the last value change
 }
 ```
 
@@ -357,6 +357,27 @@ Example:
 ```lua
 local ult = lgcs:GetUnitULT("group1")
 d("Ultimate value: " .. ult.ultValue)
+```
+
+---
+
+### `lgcs:HasUnitUltimatesSlotted(unitTag, listOfAbilityIDs)`
+Checks if the group member has specific ultimates slotted. It returns true if at least one of the abilityIDs is matched.
+
+#### Parameters:
+- **unitTag**: The unit tag of the group member (e.g., `"group1"`).
+- **listOfAbilityIDs**: A list of abilityIDs to check for (e.g., `{40223}` or `{40223, 38563, 40220}`).
+
+#### Returns:
+- **boolean** hasAtLeastOneUltSlotted:
+```lua
+true | false
+```
+
+Example:
+```lua
+local hasHornEquipped = lgcs:HasUnitUltimatesSlotted("group1", {40223, 38563, 40220})
+d("Has Unit Horn slotted? " .. hasHornEquipped)
 ```
 
 ---

@@ -1,7 +1,9 @@
 --[[
     LibGroupCombatStats
 
-    Usage:
+    For more details, have a look at the README.md file
+
+    Quick-Start:
         - register your addon by calling:
             local lgcs = LibGroupCombatStats.RegisterAddon("addonName", {"ULT", "DPS", "HPS"})
         - use the newly created lgcs object to interact with the library either by defining callbacks or by directly querrying the library with API calls
@@ -25,6 +27,7 @@
             - GetUnitDPS(unitTag) -- Retrieves DPS information for a specific unit in the group
             - GetUnitHPS(unitTag) -- Retrieves HPS information for a specific unit in the group
             - GetUnitULT(unitTag) -- Retrieves ultimate information for a specific unit in the group
+            - HasUnitUltimatesSlotted(unitTag, listOfAbilityIDs) -- Checks if the group member has specific ultimates slotted
 ]]--
 
 --- general initialization
@@ -80,7 +83,6 @@ if LibDebugLogger then
     subLoggers["broadcast"] = mainLogger:Create("broadcast")
     subLoggers["encoding"] = mainLogger:Create("encoding")
     subLoggers["events"] = mainLogger:Create("events")
-    subLoggers["menu"] = mainLogger:Create("menu")
     subLoggers["debug"] = mainLogger:Create("debug")
 end
 
@@ -457,7 +459,6 @@ end
 -- @param unitTag (string): The unitTag of the group member
 -- @return (table): The current ultimate value, ultimate 1 ID, ultimate 1 cost, ultimate 2 ID, ultimate 2 cost, and the ID for an ultActivated set, and the timestamp of the last update and last value update
 -- TODO: hasUnitULTAbilityID
--- TODO: return tables instead of multi values
 function _CombatStatsObject:GetUnitULT(unitTag)
     local characterName = GetUnitName(unitTag)
     local unit = groupStats[characterName]
@@ -467,8 +468,50 @@ function _CombatStatsObject:GetUnitULT(unitTag)
     end
 
     return unit.ult
-    --return unit.ult.ultValue, unit.ult.ult1ID, unit.ult.ult1Cost, unit.ult.ult2ID, unit.ult.ult2Cost, unit.ult.ultActivatedSetID, unit.ult._lastUpdated, unit.ult._lastChanged
 end
+-- Checks if the group member has specific ultimates slotted
+-- @param unitTag (string): The unitTag of the group member
+-- @param listOfAbilityIDs (list of numbers): The abilityIDs that need to be checked for ( {id1, id2, id3} )
+-- @return (boolean): group member has ultimate ability equipped
+function _CombatStatsObject:HasUnitUltimatesSlotted(unitTag, listOfAbilityIDs)
+    local characterName = GetUnitName(unitTag)
+    local unit = groupStats[characterName]
+    if not unit then
+        Log("debug", LOG_LEVEL_DEBUG, "unit does not exist in groupStats")
+        return false
+    end
+    if not type(listOfAbilityIDs) == "table" then
+        Log("debug", LOG_LEVEL_WARNING, "listOfAbilityIDs is not a list of abilityIDs")
+        return false
+    end
+
+    local ult1ID = unit.ult.ult1ID
+    local ult2ID = unit.ult.ult2ID
+
+    for _, abilityID in ipairs(listOfAbilityIDs) do
+        if ult1ID == abilityID or ult2ID == abilityID then return true end
+    end
+
+    return false
+end
+--- WARNING: This will soon be changed! Thats why this function is not documented in the API - use the new LibSetDetection v4 by @ExoY94 for that when it's ready
+-- Checks if the group member has a specific ultimate activated set slotted
+-- @param unitTag (string): The unitTag of the group member
+-- @param ultActivatedSetID (number): The ultActivatedSetID that needs to be checked for
+-- @return (boolean): group member has ultActivatedSet equipped
+function _CombatStatsObject:HasUnitUltActivatedSetSlotted(unitTag, ultActivatedSetID)
+    local characterName = GetUnitName(unitTag)
+    local unit = groupStats[characterName]
+    if not unit then
+        Log("debug", LOG_LEVEL_DEBUG, "unit does not exist in groupStats")
+        return false
+    end
+
+    if unit.ult.ultActivatedSetID == ultActivatedSetID then return true end
+
+    return false
+end
+
 -- Registers a callback function for a specified event
 -- @param eventName (string): The name of the event to register for
 -- @param callback (function): The function to be called when the event is triggered
@@ -1150,10 +1193,8 @@ end
 local function lgcs_test()
     lib_debug = true
 
-
     lib.groupStats = groupStats
     local instance = lib.RegisterAddon("LibGroupCombatStatsTest", {"ULT", "HPS", "DPS"})
-
 
     local function logEvent(eventName)
         LocalEM:RegisterCallback(eventName, function(unitTag, data)

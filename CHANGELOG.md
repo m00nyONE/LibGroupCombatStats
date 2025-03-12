@@ -6,6 +6,7 @@
 - merging https://github.com/m00nyONE/LibGroupCombatStats/pull/2 from @Treuce adding sanity checks for LibCombat to avoid these issues in the future
 - api refinement
 - add LGB description for Addon menu
+- add HasUnitUltimatesSlotted(unitTag, listOfAbilityIDs) api function
 
 ## 2025.03.06
 - include syncRequest after reloadui
