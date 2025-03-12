@@ -511,12 +511,12 @@ function combat.UnitsCallback(_, units)
     combatData.units = units
 end
 function combat.FightRecapCallback(_, data)
-    combatData.DPSOut = data.DPSOut
-    combatData.HPSOut = data.HPSOut
-    combatData.HPSAOut = data.HPSAOut
-    combatData.dpstime = data.dpstime
-    combatData.hpstime = data.hpstime
-    combatData.bossfight = data.bossfight
+    combatData.DPSOut = data.DPSOut or 0 
+    combatData.HPSOut = data.HPSOut or 0
+    combatData.HPSAOut = data.HPSAOut or 0
+    combatData.dpstime = data.dpstime or 0
+    combatData.hpstime = data.hpstime or 0
+    combatData.bossfight = data.bossfight or false
 end
 function combat.Register()
 
