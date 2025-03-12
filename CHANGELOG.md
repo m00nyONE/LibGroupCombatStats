@@ -1,3 +1,6 @@
+## 2025.03.12
+- api refinement
+
 ## 2025.03.06
 - include syncRequest after reloadui
 - remove unneeded dependencies

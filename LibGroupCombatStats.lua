@@ -429,7 +429,7 @@ function _CombatStatsObject:GetUnitStats(unitTag)
 end
 -- Retrieves DPS information for a specific unit in the group
 -- @param unitTag (string): The unitTag of the group member
--- @return (string, number, number, number): The type of damage, total damage, DPS value, and the timestamp of the last DPS update
+-- @return (table): The type of damage, total damage, DPS value, and the timestamp of the last update and last value update
 function _CombatStatsObject:GetUnitDPS(unitTag)
     local characterName = GetUnitName(unitTag)
     local unit = groupStats[characterName]
@@ -438,11 +438,11 @@ function _CombatStatsObject:GetUnitDPS(unitTag)
         return nil
     end
 
-    return unit.dps.dmgType, unit.dps.dmg, unit.dps.dps, unit.dps._lastUpdated, unit.dps._lastChanged
+    return unit.dps
 end
 -- Retrieves HPS information for a specific unit in the group
 -- @param unitTag (string): The unitTag of the group member
--- @return (number, number, number): The overhealing value, HPS value, and the timestamp of the last HPS update
+-- @return (table): The overhealing value, HPS value, and the timestamp of the last update and last value update
 function _CombatStatsObject:GetUnitHPS(unitTag)
     local characterName = GetUnitName(unitTag)
     local unit = groupStats[characterName]
@@ -451,12 +451,13 @@ function _CombatStatsObject:GetUnitHPS(unitTag)
         return nil
     end
 
-    return unit.hps.overheal, unit.hps.hps, unit.hps._lastUpdated, unit.hps._lastChanged
+    return unit.hps
 end
 -- Retrieves ultimate information for a specific unit in the group
 -- @param unitTag (string): The unitTag of the group member
--- @return (number, number, number, number, number, number):
--- The current ultimate value, ultimate 1 ID, ultimate 1 cost, ultimate 2 ID, ultimate 2 cost, and the ID for an ultActivated set
+-- @return (table): The current ultimate value, ultimate 1 ID, ultimate 1 cost, ultimate 2 ID, ultimate 2 cost, and the ID for an ultActivated set, and the timestamp of the last update and last value update
+-- TODO: hasUnitULTAbilityID
+-- TODO: return tables instead of multi values
 function _CombatStatsObject:GetUnitULT(unitTag)
     local characterName = GetUnitName(unitTag)
     local unit = groupStats[characterName]
@@ -465,7 +466,8 @@ function _CombatStatsObject:GetUnitULT(unitTag)
         return nil
     end
 
-    return unit.ult.ultValue, unit.ult.ult1ID, unit.ult.ult1Cost, unit.ult.ult2ID, unit.ult.ult2Cost, unit.ult.ultActivatedSetID, unit.ult._lastUpdated, unit.ult._lastChanged
+    return unit.ult
+    --return unit.ult.ultValue, unit.ult.ult1ID, unit.ult.ult1Cost, unit.ult.ult2ID, unit.ult.ult2Cost, unit.ult.ultActivatedSetID, unit.ult._lastUpdated, unit.ult._lastChanged
 end
 -- Registers a callback function for a specified event
 -- @param eventName (string): The name of the event to register for

@@ -110,6 +110,7 @@ ultData = {
   ult2Cost = number, -- backbar ultimate cost
   ultActivatedSetId = number, -- the id of a set that is activated with an ultimate ( see LibGroupCombatStats.ULT_ACTIVATED_SETS_LIST )
   _lastUpdated = number, -- timestamp of last update
+  _lastChanged = number, -- timestamp of last value change
 }
 
 dpsData = {
@@ -117,11 +118,14 @@ dpsData = {
   dmg = number, -- (0-999) overall damage in Millions when dmgType = DAMAGE_TOTAL / overall dps when dmgType = DAMAGE_BOSS
   dps = number, -- (0-9999 -- 0k-999.9k) overall dps in Thousands when dmgType = DAMAGE_TOTAL / boss singletarget dps when dmgType = DAMAGE_BOSS  
   _lastUpdated = number, -- timestamp of last update
+  _lastChanged = number, -- timestamp of last value change
 }
 
 hpsData = {
   overheal = number, -- (0-999 -- 0k-999k) overheal/raw hps 
   hps = number, -- (0-999 -- 0-999k) real hps
+  _lastUpdated = number, -- timestamp of last update
+  _lastChanged = number, -- timestamp of last value change
 }
 ```
 
@@ -171,17 +175,20 @@ A table with the following structure:
             ult2Needed = number,
             ultActivatedSetId = number,
             _lastUpdated = timestamp,
+            _lastChanged = timestamp,
         },
         dps = {
             dmgType = number, -- 0 (Unknown), 1 (Total), 2 (Boss)
             dmg = number,
             dps = number,
             _lastUpdated = timestamp,
+            _lastChanged = timestamp,
         },
         hps = {
             overheal = number,
             hps = number,
             _lastUpdated = timestamp,
+            _lastChanged = timestamp,
         },
     },
     ...
@@ -280,15 +287,22 @@ Retrieves DPS information for a specific unit.
 - **unitTag**: The unit tag of the group member (e.g., `"group1"`).
 
 #### Returns:
-- **number**: Damage type (`0` for Unknown, `1` for Total, `2` for Boss).
-- **number**: Total damage.
-- **number**: DPS value.
-- **number**: Timestamp of the last update.
+- **table** dps:
+```lua
+dps = {
+    dmgType = number, -- 0 (Unknown), 1 (Total), 2 (Boss)
+    dmg = number, -- Total damage
+    dps = number, -- dps value
+    _lastUpdated = timestamp, -- timestamp of the last update
+    _lastChanged = timestamp, -- timestamp of the last value change
+}
+```
 
 Example:
 ```lua
-local dmgType, dmg, dps, _lastUpdated = lgcs:GetUnitDPS("group1")
-d("DPS: " .. dps .. " Damage: " .. dmg)
+local dps = lgcs:GetUnitDPS("group1")
+
+d("DPS: " .. dps.dps .. " Damage: " .. dps.dmg)
 ```
 
 ---
@@ -300,14 +314,20 @@ Retrieves HPS information for a specific unit.
 - **unitTag**: The unit tag of the group member (e.g., `"group1"`).
 
 #### Returns:
-- **number**: Overheal value.
-- **number**: HPS value.
-- **number**: Timestamp of the last update.
+- **table** hps:
+```lua
+hps = {
+    overheal = number, Overheal value
+    hps = number, -- HPS value
+    _lastUpdated = timestamp, -- timestamp of the last update
+    _lastChanged = timestamp, -- timestamp of the last value change
+}
+```
 
 Example:
 ```lua
-local overheal, hps, _lastUpdated = lgcs:GetUnitHPS("group1")
-d("HPS: " .. hps .. " Overheal: " .. overheal)
+local hps = lgcs:GetUnitHPS("group1")
+d("HPS: " .. hps.hps .. " Overheal: " .. hps.overheal)
 ```
 
 ---
@@ -319,18 +339,24 @@ Retrieves ultimate information for a specific unit.
 - **unitTag**: The unit tag of the group member (e.g., `"group1"`).
 
 #### Returns:
-- **number**: Current ultimate value.
-- **number**: Ultimate 1 ID.
-- **number**: Ultimate 1 cost.
-- **number**: Ultimate 2 ID.
-- **number**: Ultimate 2 cost.
-- **number**: Ultimate activated set ID. -- see `LibGroupCombatStats.ULT_ACTIVATED_SET_LIST` for more info
-- **number**: Timestamp of the last update.
+- **table** ult:
+```lua
+ult = {
+    ultValue = number, -- Current ultimate value
+    ult1ID = number, -- Ultimate 1 ID
+    ult1Needed = number, -- Ultimate 1 cost
+    ult2ID = number, -- Ultimate 2 ID
+    ult2Needed = number, -- Ultimate 2 cost
+    ultActivatedSetId = number, -- Ultimate activated set ID. -- see `LibGroupCombatStats.ULT_ACTIVATED_SET_LIST` for more info
+    _lastUpdated = timestamp, -- timestamp of the last update
+    _lastChanged = timestamp, -- timestamp of the last value change
+}
+```
 
 Example:
 ```lua
-local ultValue, ult1ID, ult1Cost, ult2ID, ult2Cost, setId, _lastUpdated = lgcs:GetUnitULT("group1")
-d("Ultimate value: " .. ultValue)
+local ult = lgcs:GetUnitULT("group1")
+d("Ultimate value: " .. ult.ultValue)
 ```
 
 ---
