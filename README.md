@@ -170,9 +170,9 @@ A table with the following structure:
         ult = {
             ultValue = number,
             ult1ID = number,
-            ult1Needed = number,
             ult2ID = number,
-            ult2Needed = number,
+            ult1Cost = number,
+            ult2Cost = number,
             ultActivatedSetId = number,
             _lastUpdated = timestamp,
             _lastChanged = timestamp,
@@ -344,9 +344,9 @@ Retrieves ultimate information for a specific unit.
 ult = {
     ultValue = number, -- Current ultimate value
     ult1ID = number, -- Ultimate 1 ID
-    ult1Needed = number, -- Ultimate 1 cost
     ult2ID = number, -- Ultimate 2 ID
-    ult2Needed = number, -- Ultimate 2 cost
+    ult1Cost = number, -- Ultimate 1 cost
+    ult2Cost = number, -- Ultimate 2 cost
     ultActivatedSetId = number, -- Ultimate activated set ID. -- see `LibGroupCombatStats.ULT_ACTIVATED_SET_LIST` for more info
     _lastUpdated = timestamp, -- timestamp of the last update
     _lastChanged = timestamp, -- timestamp of the last value change
