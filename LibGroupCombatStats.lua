@@ -397,7 +397,7 @@ function _CombatStatsObject:GetUnitStats(unitTag)
     local dps = unit.dps
     local hps = unit.hps
     local result = {
-        tag = unit.tag,
+        tag = unitTag,
         name = unit.name,
         displayName = unit.displayName,
         isPlayer = unit.isPlayer,
@@ -533,6 +533,92 @@ function _CombatStatsObject:UnregisterForEvent(eventName, callback)
     LocalEM:UnregisterCallback(eventName, callback)
 end
 
+
+--- group change tracking
+local function OnGroupChange()
+    local _existingGroupCharacters = {} -- create empty table to create a list of all groupmembers after the change
+    local _groupSize = GetGroupSize()
+
+    for i = 1, _groupSize do
+        local tag = GetGroupUnitTagByIndex(i)
+
+        if IsUnitPlayer(tag) then
+
+            local isPlayer = AreUnitsEqual(tag, localPlayer)
+            local characterName = GetUnitName(tag)
+            _existingGroupCharacters[characterName] = true
+
+            if not isPlayer then
+                groupStats[characterName] = groupStats[characterName] or {
+                    name = characterName,
+                    displayName = GetUnitDisplayName(tag),
+                    isPlayer = isPlayer,
+                    isOnline = IsUnitOnline(tag),
+
+                    ult = ObservableTable:New(function(data)
+                        LocalEM:FireCallbacks(EVENT_GROUP_ULT_UPDATE, groupStats[characterName].tag, data)
+                    end, 10, {
+                        ultValue = 0,
+                        ult1ID = 0,
+                        ult2ID = 0,
+                        ult1Cost = 0,
+                        ult2Cost = 0,
+                        ultActivatedSetID = 0,
+                    }),
+
+                    dps = ObservableTable:New(function(data)
+                        LocalEM:FireCallbacks(EVENT_GROUP_DPS_UPDATE, groupStats[characterName].tag, data)
+                    end, 10, {
+                        dmgType = 0,
+                        dmg = 0,
+                        dps = 0,
+                    }),
+
+                    hps = ObservableTable:New(function(data)
+                        LocalEM:FireCallbacks(EVENT_GROUP_HPS_UPDATE, groupStats[characterName].tag, data)
+                    end, 10, {
+                        overheal = 0,
+                        hps = 0,
+                    }),
+                }
+
+
+            end
+            groupStats[characterName].tag = tag
+            --groupStats[characterName].isOnline = IsUnitOnline(tag)
+        end
+    end
+
+
+    for characterName, _ in pairs(groupStats) do
+        if characterName ~= PLAYER_CHARACTER_NAME then
+            if not _existingGroupCharacters[characterName] then
+                groupStats[characterName] = nil
+            end
+        end
+    end
+end
+local function OnGroupChangeDelayed()
+    zo_callLater(OnGroupChange, 500) -- wait 500ms to avoid any race conditions
+    if IsUnitGrouped(localPlayer) then
+        zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+        zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
+    end
+end
+local function unregisterGroupEvents()
+    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED)
+    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_LEFT)
+    --EM:UnregisterForEvent(lib_name, EVENT_GROUP_UPDATE)
+    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_CONNECTED_STATUS)
+    Log("events", LOG_LEVEL_DEBUG, "group events unregistered")
+end
+local function registerGroupEvents()
+    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED, OnGroupChangeDelayed)
+    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_LEFT, OnGroupChangeDelayed)
+    --EM:RegisterForEvent(lib_name, EVENT_GROUP_UPDATE, OnGroupChangeDelayed)
+    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_CONNECTED_STATUS, OnGroupChangeDelayed)
+    Log("events", LOG_LEVEL_DEBUG, "group events registered")
+end
 
 --- Combat extension ( stolen from HodorReflexes - thanks andy.s <3 )
 local LC = LibCombat
@@ -821,42 +907,50 @@ local function onMessageUltTypeUpdateReceived(unitTag, data)
     end
 
     local charName = GetUnitName(unitTag)
-    if not groupStats[charName] then return end
+    if not groupStats[charName] then OnGroupChange() end
 
     groupStats[charName].ult.ult1ID = _ultInternalIdMap[data.ult1ID]
     groupStats[charName].ult.ult2ID = _ultInternalIdMap[data.ult2ID]
     groupStats[charName].ult.ult1Cost = data.ult1Cost * 2
     groupStats[charName].ult.ult2Cost = data.ult2Cost * 2
     groupStats[charName].ult.ultActivatedSetID = data.ultActivatedSetID
+
+    groupStats[charName].tag = unitTag
 end
 local function onMessageUltValueUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
     local charName = GetUnitName(unitTag)
-    if not groupStats[charName] then return end
+    if not groupStats[charName] then OnGroupChange() end
 
     data.ultValue = data.ultValue * 2
 
     groupStats[charName].ult.ultValue = data.ultValue
+
+    groupStats[charName].tag = unitTag
 end
 local function onMessageDpsUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
     local charName = GetUnitName(unitTag)
-    if not groupStats[charName] then return end
+    if not groupStats[charName] then OnGroupChange() end
 
     groupStats[charName].dps.dmgType = data.dmgType
     groupStats[charName].dps.dmg = data.dmg
     groupStats[charName].dps.dps = data.dps
+
+    groupStats[charName].tag = unitTag
 end
 local function onMessageHpsUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
     local charName = GetUnitName(unitTag)
-    if not groupStats[charName] then return end
+    if not groupStats[charName] then OnGroupChange() end
 
     groupStats[charName].hps.overheal = data.overheal
     groupStats[charName].hps.hps = data.hps
+
+    groupStats[charName].tag = unitTag
 end
 
 local function onMessageUltTypeUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
@@ -901,94 +995,6 @@ local function enablePlayerBroadcastULT()
 
     Log("events", LOG_LEVEL_DEBUG, "ULT broadcast enabled")
 end
-
-
---- group change tracking
-local function OnGroupChange()
-    local _existingGroupCharacters = {} -- create empty table to create a list of all groupmembers after the change
-    local _groupSize = GetGroupSize()
-
-    for i = 1, _groupSize do
-        local tag = GetGroupUnitTagByIndex(i)
-
-        if IsUnitPlayer(tag) then
-
-            local isPlayer = AreUnitsEqual(tag, localPlayer)
-            local characterName = GetUnitName(tag)
-            _existingGroupCharacters[characterName] = true
-
-            if not isPlayer then
-                groupStats[characterName] = groupStats[characterName] or {
-                    name = characterName,
-                    displayName = GetUnitDisplayName(tag),
-                    isPlayer = isPlayer,
-                    isOnline = IsUnitOnline(tag),
-
-                    ult = ObservableTable:New(function(data)
-                        LocalEM:FireCallbacks(EVENT_GROUP_ULT_UPDATE, tag, data)
-                    end, 10, {
-                        ultValue = 0,
-                        ult1ID = 0,
-                        ult2ID = 0,
-                        ult1Cost = 0,
-                        ult2Cost = 0,
-                        ultActivatedSetID = 0,
-                    }),
-
-                    dps = ObservableTable:New(function(data)
-                        LocalEM:FireCallbacks(EVENT_GROUP_DPS_UPDATE, tag, data)
-                    end, 10, {
-                        dmgType = 0,
-                        dmg = 0,
-                        dps = 0,
-                    }),
-
-                    hps = ObservableTable:New(function(data)
-                        LocalEM:FireCallbacks(EVENT_GROUP_HPS_UPDATE, tag, data)
-                    end, 10, {
-                        overheal = 0,
-                        hps = 0,
-                    }),
-                }
-
-
-            end
-            groupStats[characterName].tag = tag
-            --groupStats[characterName].isOnline = IsUnitOnline(tag)
-        end
-    end
-
-
-    for characterName, _ in pairs(groupStats) do
-        if characterName ~= PLAYER_CHARACTER_NAME then
-            if not _existingGroupCharacters[characterName] then
-                groupStats[characterName] = nil
-            end
-        end
-    end
-end
-local function OnGroupChangeDelayed()
-    zo_callLater(OnGroupChange, 500) -- wait 500ms to avoid any race conditions
-    if IsUnitGrouped(localPlayer) then
-        zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
-        zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
-    end
-end
-local function unregisterGroupEvents()
-    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED)
-    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_LEFT)
-    --EM:UnregisterForEvent(lib_name, EVENT_GROUP_UPDATE)
-    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_CONNECTED_STATUS)
-    Log("events", LOG_LEVEL_DEBUG, "group events unregistered")
-end
-local function registerGroupEvents()
-    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED, OnGroupChangeDelayed)
-    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_LEFT, OnGroupChangeDelayed)
-    --EM:RegisterForEvent(lib_name, EVENT_GROUP_UPDATE, OnGroupChangeDelayed)
-    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_CONNECTED_STATUS, OnGroupChangeDelayed)
-    Log("events", LOG_LEVEL_DEBUG, "group events registered")
-end
-
 
 --- exposed API Calls
 function lib.RegisterAddon(addonName, neededStats)
