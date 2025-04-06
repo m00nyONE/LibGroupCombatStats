@@ -940,17 +940,16 @@ local function onMessageHpsUpdateReceived_V2(unitTag, data) toNewToProcessWarnin
 
 --- group utility functions
 local function OnGroupChangeDelayed()
-    zo_callLater(OnGroupChange, 500) -- wait 500ms to avoid any race conditions
+    zo_callLater(OnGroupChange, 250) -- wait 250ms to avoid any race conditions
     if IsUnitGrouped(localPlayer) then
-        zo_callLater(function()
-            broadcastPlayerUltType()
-            --LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
-        end, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
-        zo_callLater(function()
-            broadcastPlayerUltValue(_, true)
-            --LocalEM:FireCallbacks(EVENT_PLAYER_ULT_VALUE_UPDATE, localPlayer, playerStats.ult)
-        end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
+        zo_callLater(function() broadcastPlayerUltType() end, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+        zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
     end
+    zo_callLater(function() -- fire events for the player to allow addons to rebuild their group table with new data
+        LocalEM:FireCallbacks(EVENT_PLAYER_ULT_UPDATE, localPlayer, playerStats.ult)
+        LocalEM:FireCallbacks(EVENT_PLAYER_DPS_UPDATE, localPlayer, playerStats.dps)
+        LocalEM:FireCallbacks(EVENT_PLAYER_HPS_UPDATE, localPlayer, playerStats.hps)
+    end, 500)
 end
 local function unregisterGroupEvents()
     EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED)
