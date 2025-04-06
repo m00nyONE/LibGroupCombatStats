@@ -1,3 +1,7 @@
+## 2025.04.06
+- fix issue with not changing unitTags
+- reformatting code structure
+
 ## 2025.03.12
 - dump dependencies:
   - LibCombat>=79
