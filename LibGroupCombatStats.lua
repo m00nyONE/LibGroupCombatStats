@@ -942,8 +942,14 @@ local function onMessageHpsUpdateReceived_V2(unitTag, data) toNewToProcessWarnin
 local function OnGroupChangeDelayed()
     zo_callLater(OnGroupChange, 500) -- wait 500ms to avoid any race conditions
     if IsUnitGrouped(localPlayer) then
-        zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
-        zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
+        zo_callLater(function()
+            broadcastPlayerUltType()
+            --LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
+        end, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+        zo_callLater(function()
+            broadcastPlayerUltValue(_, true)
+            --LocalEM:FireCallbacks(EVENT_PLAYER_ULT_VALUE_UPDATE, localPlayer, playerStats.ult)
+        end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
     end
 end
 local function unregisterGroupEvents()
