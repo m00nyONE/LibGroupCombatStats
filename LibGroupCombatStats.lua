@@ -598,27 +598,6 @@ local function OnGroupChange()
         end
     end
 end
-local function OnGroupChangeDelayed()
-    zo_callLater(OnGroupChange, 500) -- wait 500ms to avoid any race conditions
-    if IsUnitGrouped(localPlayer) then
-        zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
-        zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
-    end
-end
-local function unregisterGroupEvents()
-    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED)
-    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_LEFT)
-    --EM:UnregisterForEvent(lib_name, EVENT_GROUP_UPDATE)
-    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_CONNECTED_STATUS)
-    Log("events", LOG_LEVEL_DEBUG, "group events unregistered")
-end
-local function registerGroupEvents()
-    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED, OnGroupChangeDelayed)
-    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_LEFT, OnGroupChangeDelayed)
-    --EM:RegisterForEvent(lib_name, EVENT_GROUP_UPDATE, OnGroupChangeDelayed)
-    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_CONNECTED_STATUS, OnGroupChangeDelayed)
-    Log("events", LOG_LEVEL_DEBUG, "group events registered")
-end
 
 --- Combat extension ( stolen from HodorReflexes - thanks andy.s <3 )
 local LC = LibCombat
@@ -957,6 +936,30 @@ local function onMessageUltTypeUpdateReceived_V2(unitTag, data) toNewToProcessWa
 local function onMessageUltValueUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
 local function onMessageDpsUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
 local function onMessageHpsUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
+
+
+--- group utility functions
+local function OnGroupChangeDelayed()
+    zo_callLater(OnGroupChange, 500) -- wait 500ms to avoid any race conditions
+    if IsUnitGrouped(localPlayer) then
+        zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+        zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
+    end
+end
+local function unregisterGroupEvents()
+    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED)
+    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_LEFT)
+    --EM:UnregisterForEvent(lib_name, EVENT_GROUP_UPDATE)
+    EM:UnregisterForEvent(lib_name, EVENT_GROUP_MEMBER_CONNECTED_STATUS)
+    Log("events", LOG_LEVEL_DEBUG, "group events unregistered")
+end
+local function registerGroupEvents()
+    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_JOINED, OnGroupChangeDelayed)
+    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_LEFT, OnGroupChangeDelayed)
+    --EM:RegisterForEvent(lib_name, EVENT_GROUP_UPDATE, OnGroupChangeDelayed)
+    EM:RegisterForEvent(lib_name, EVENT_GROUP_MEMBER_CONNECTED_STATUS, OnGroupChangeDelayed)
+    Log("events", LOG_LEVEL_DEBUG, "group events registered")
+end
 
 
 --- enable / disable broadcasting of stats
