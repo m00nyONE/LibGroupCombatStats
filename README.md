@@ -139,7 +139,7 @@ The following API functions are available through the `lgcs` object:
 It is possible to iterate over the internal groupStats table with `pairs(lgcs)` or `lgcs:Iterate()`.
 
 Returns:
-`iterator`
+`iterator` An iterator for key-value pairs where the key is the `unitTag` and the value is the stats table.
 
 Example:
 ```lua
@@ -149,9 +149,8 @@ for unitTag, stats in lgcs:Iterate() do
 end
 
 for unitTag, stats in pairs(lgcs) do
-  d(unitTag)
-  d(stats)
-end 
+  d("Stats for: " .. stats.name .. " - DPS: " .. stats.dps.dps)
+end
 ```
 
 
@@ -223,20 +222,6 @@ d("Group size: " .. groupSizeViaMetatableMethod)
 
 ---
 
-### `lgcs:Iterate()`
-Iterates over all group members.
-
-#### Returns:
-An iterator for key-value pairs where the key is the `unitTag` and the value is the stats table.
-
-Example:
-```lua
-for tag, stats in lgcs:Iterate() do
-    d("Stats for: " .. stats.name .. " - DPS: " .. stats.dps.dps)
-end
-```
-
----
 
 ### `lgcs:GetStatsShared()`
 Retrieves a list of functionalities currently enabled in the library.

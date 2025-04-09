@@ -1116,7 +1116,6 @@ local function declareLGBProtocols()
     protocolUltType:AddField(CreateNumericField("ult1ID", {
         minValue = 0,
         maxValue = 127,
-        --maxValue = 2^18-1,
     }))
     protocolUltType:AddField(CreateNumericField("ult2ID", {
         minValue = 0,
