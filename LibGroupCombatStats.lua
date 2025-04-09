@@ -1208,6 +1208,10 @@ local function lgcs_test()
 
     lib.groupStats = groupStats
     local instance = lib.RegisterAddon("LibGroupCombatStatsTest", {"ULT", "HPS", "DPS"})
+    if not instance then
+        d("registration of LibGroupCombatStatsTest failed")
+        return
+    end
 
     local function logEvent(eventName)
         LocalEM:RegisterCallback(eventName, function(unitTag, data)
