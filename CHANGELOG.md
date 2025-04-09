@@ -1,5 +1,6 @@
 ## 2025.04.09
 - update documentation
+- use new .addon file instead of the old .txt
 
 ## 2025.04.06
 - fix issue with not changing unitTags
