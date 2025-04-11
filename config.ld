@@ -11,6 +11,3 @@ kind_names = {
    topic = "Manual",
    script = "LibGroupCombatStats"
 }
-examples  =  {
-   "example_addon/_example_addon.lua",
-}
