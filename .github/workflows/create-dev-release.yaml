@@ -1,4 +1,4 @@
-name: Create Dev Release on Push
+name: Dev Release
 
 on:
   #schedule:
@@ -43,7 +43,7 @@ jobs:
           cp -r ./* /tmp/${{ env.REPO_NAME }}
           rm -rf /tmp/${{ env.REPO_NAME }}/{.git,.github,.gitignore}
           cd /tmp
-          zip -r "$REPO_FOLDER/${{ env.REPO_NAME }}-${{ env.BUILD_DATE_WITH_HYPHEN }}-dev.zip" ./${{ env.REPO_NAME }} -x "*.git*" "*.github*" ".gitignore"
+          zip -r "$REPO_FOLDER/${{ env.REPO_NAME }}-${{ env.BUILD_DATE_WITH_HYPHEN }}-dev.zip" ./${{ env.REPO_NAME }} -x "*.git*" "*.github*" ".gitignore" "TODO.md" "config.ld"
 
       - name: Create GitHub Release
         #id: create_release
