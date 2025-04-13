@@ -694,7 +694,7 @@ end
 
 --- update player values
 local function updatePlayerUltValue()
-    playerStats.ult.ultValue = zo_max(0, zo_min(500, GetUnitPower(localPlayer, POWERTYPE_ULTIMATE)))
+    playerStats.ult.ultValue = zo_max(0, zo_min(500, GetUnitPower(localPlayer, COMBAT_MECHANIC_FLAGS_ULTIMATE)))
     LocalEM:FireCallbacks(EVENT_PLAYER_ULT_VALUE_UPDATE, localPlayer, playerStats.ult)
 end
 local function updatePlayerDps()
@@ -742,18 +742,18 @@ local function updatePlayerSlottedUlts()
     -- populate values
     playerStats.ult.ult1ID = GetSlotBoundId(ACTION_BAR_ULTIMATE_SLOT_INDEX + 1, HOTBAR_CATEGORY_PRIMARY)
     playerStats.ult.ult2ID = GetSlotBoundId(ACTION_BAR_ULTIMATE_SLOT_INDEX + 1, HOTBAR_CATEGORY_BACKUP)
-    playerStats.ult.ult1Cost = GetAbilityCost(playerStats.ult.ult1ID)
-    playerStats.ult.ult2Cost = GetAbilityCost(playerStats.ult.ult2ID)
+    playerStats.ult.ult1Cost = GetAbilityCost(playerStats.ult.ult1ID, COMBAT_MECHANIC_FLAGS_ULTIMATE, nil, localPlayer)
+    playerStats.ult.ult2Cost = GetAbilityCost(playerStats.ult.ult2ID, COMBAT_MECHANIC_FLAGS_ULTIMATE, nil, localPlayer)
 
     LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
 end
 local function updatePlayerUltimateCost()
-    local ult1Cost = GetAbilityCost(playerStats.ult.ult1ID)
-    local ult2Cost = GetAbilityCost(playerStats.ult.ult2ID)
+    local ult1Cost = GetAbilityCost(playerStats.ult.ult1ID, COMBAT_MECHANIC_FLAGS_ULTIMATE, nil, localPlayer)
+    local ult2Cost = GetAbilityCost(playerStats.ult.ult2ID, COMBAT_MECHANIC_FLAGS_ULTIMATE, nil, localPlayer)
     if playerStats.ult.ult1Cost == ult1Cost and playerStats.ult.ult2Cost == ult2Cost then return end
 
-    playerStats.ult.ult1Cost = GetAbilityCost(playerStats.ult.ult1ID)
-    playerStats.ult.ult2Cost = GetAbilityCost(playerStats.ult.ult2ID)
+    playerStats.ult.ult1Cost = GetAbilityCost(playerStats.ult.ult1ID, COMBAT_MECHANIC_FLAGS_ULTIMATE, nil, localPlayer)
+    playerStats.ult.ult2Cost = GetAbilityCost(playerStats.ult.ult2ID, COMBAT_MECHANIC_FLAGS_ULTIMATE, nil, localPlayer)
     LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
 end
 local function updatePlayerUltActivatedSets()
