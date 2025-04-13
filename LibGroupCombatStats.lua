@@ -788,17 +788,18 @@ local function updatePlayerDps()
     playerStats.dps.dps = dps
 end
 local function updatePlayerHps()
-    local overheal = 0
-    local hps = 0
-
     local data = combat.GetData()
 
-    if data.HPSOut == 0 or data.OHPSOut == 0 then
-        overheal, hps = 0, 0
+    -- If no HPS data available, set values to zero
+    if data.HPSOut == 0 and data.OHPSOut == 0 then
+        playerStats.hps.overheal = 0
+        playerStats.hps.hps = 0
+        return
     end
 
+    -- Otherwise calculate values from the data
     playerStats.hps.overheal = zo_floor(data.OHPSOut / 1000)
-    playerStats.hps.hps = zo_floor(data.HPSOut / 1000 )
+    playerStats.hps.hps = zo_floor(data.HPSOut / 1000)
 end
 local function updatePlayerSlottedUlts()
     -- reset values
