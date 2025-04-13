@@ -835,8 +835,8 @@ local function broadcastPlayerUltType()
     if not IsUnitGrouped(localPlayer) then return end
     if not _statsShared[ULT] then return end
 
-    local ult1InternalId = _ultIdMap[playerStats.ult.ult1ID]
-    local ult2InternalId = _ultIdMap[playerStats.ult.ult2ID]
+    local ult1InternalId = _ultIdMap[playerStats.ult.ult1ID] or 0
+    local ult2InternalId = _ultIdMap[playerStats.ult.ult2ID] or 0
 
     local data = {
         ult1ID = ult1InternalId,
