@@ -200,22 +200,22 @@ function ObservableTable:New(onChangeCallback, fireAfterLastChangeMS, initTable)
     end
 
     -- Define the internal onChange function to handle delayed callbacks
-    local onChange = function(self)
+    local onChange = function(instance)
         -- If no delay is specified, trigger the callback immediately
-        if self._fireAfterLastChangeMS == 0 then
-            self._onChangeCallback(self._data)
+        if instance._fireAfterLastChangeMS == 0 then
+            instance._onChangeCallback(instance._data)
             return
         end
 
         -- Unique update event name for this instance
-        local updateName = self._eventId
+        local updateName = instance._eventId
 
         -- Unregister any previous delayed callback
         EM:UnregisterForUpdate(updateName)
 
         -- Register a new delayed callback
-        EM:RegisterForUpdate(updateName, self._fireAfterLastChangeMS, function()
-            self._onChangeCallback(self._data) -- Trigger the callback with the current table data
+        EM:RegisterForUpdate(updateName, instance._fireAfterLastChangeMS, function()
+            instance._onChangeCallback(instance._data) -- Trigger the callback with the current table data
             EM:UnregisterForUpdate(updateName) -- Ensure the callback is unregistered after execution
         end)
     end
