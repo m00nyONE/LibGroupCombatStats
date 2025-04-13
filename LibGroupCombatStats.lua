@@ -194,10 +194,7 @@ ObservableTable.__index = ObservableTable
 -- @return (table): A new instance of ObservableTable
 function ObservableTable:New(onChangeCallback, fireAfterLastChangeMS, initTable)
     -- Validate that the callback is a function
-    if not IsCallable(onChangeCallback) then
-        Log("debug", LOG_LEVEL_ERROR, "onChangeCallback must be a function")
-        return nil
-    end
+    assert(type(onChangeCallback) == "function", "onChangeCallback must be a function")
 
     -- Define the internal onChange function to handle delayed callbacks
     local onChange = function(instance)
@@ -516,8 +513,8 @@ end
 -- @param eventName (string): The name of the event to register for
 -- @param callback (function): The function to be called when the event is triggered
 function _CombatStatsObject:RegisterForEvent(eventName, callback)
-    if not IsCallable(callback) then Log("events", LOG_LEVEL_ERROR, "callback is not a function") return end
-    if type(eventName) ~= "string" then Log("events", LOG_LEVEL_ERROR, "eventName is not a string") return end
+    assert(type(callback) == "function", "callback must be a function")
+    assert(type(eventName) == "string", "eventName must be a string")
 
     LocalEM:RegisterCallback(eventName, callback)
     Log("events", LOG_LEVEL_DEBUG, "callback for %s registered", eventName)
@@ -526,8 +523,8 @@ end
 -- @param eventName (string): The name of the event to unregister from
 -- @param callback (function): The callback function to unregister
 function _CombatStatsObject:UnregisterForEvent(eventName, callback)
-    if not IsCallable(callback) then Log("events", LOG_LEVEL_ERROR, "callback is not a function") return end
-    if type(eventName) ~= "string" then Log("events", LOG_LEVEL_ERROR, "eventName is not a string") return end
+    assert(type(callback) == "function", "callback must be a function")
+    assert(type(eventName) == "string", "eventName must be a string")
 
     Log("events", LOG_LEVEL_DEBUG, "callback for %s unregistered", eventName)
     LocalEM:UnregisterCallback(eventName, callback)
