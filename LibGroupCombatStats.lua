@@ -786,7 +786,9 @@ local function registerPlayerStatsUpdateFunctions()
     EM:RegisterForUpdate(lib_name .. "_dpsUpdate", PLAYER_DPS_UPDATE_INTERVAL, updatePlayerDps)
     EM:RegisterForUpdate(lib_name .. "_hpsUpdate", PLAYER_HPS_UPDATE_INTERVAL, updatePlayerHps)
     EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED, updatePlayerSlottedUlts)
+    EM:AddFilterForEvent(lib_name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED, REGISTER_FILTER_POWER_TYPE, COMBAT_MECHANIC_FLAGS_ULTIMATE, REGISTER_FILTER_UNIT_TAG, localPlayer)
     EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE, updatePlayerUltActivatedSets)
+    EM:AddFilterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE, REGISTER_FILTER_BAG_ID, BAG_WORN)
     Log("events", LOG_LEVEL_DEBUG, "playerStatsUpdate functions registered")
 end
 
