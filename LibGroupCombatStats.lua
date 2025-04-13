@@ -870,7 +870,7 @@ local function onSyncRequestReceived(unitTag, _)
     if not IsUnitGrouped(localPlayer) then return end
 
     zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
-    zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
+    zo_callLater(function() broadcastPlayerUltValue(nil, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
 end
 
 --- receiving broadcast callbacks
@@ -882,7 +882,7 @@ local function onMessageUltTypeUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
     if data.syncRequest then
-        onSyncRequestReceived()
+        onSyncRequestReceived(unitTag)
     end
 
     local charName = GetUnitName(unitTag)
@@ -943,7 +943,7 @@ local function OnGroupChangeDelayed()
     zo_callLater(OnGroupChange, 250) -- wait 250ms to avoid any race conditions
     if IsUnitGrouped(localPlayer) then
         zo_callLater(function() broadcastPlayerUltType() end, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
-        zo_callLater(function() broadcastPlayerUltValue(_, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
+        zo_callLater(function() broadcastPlayerUltValue(nil, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
     end
     zo_callLater(function() -- fire events for the player to allow addons to rebuild their group table with new data
         LocalEM:FireCallbacks(EVENT_PLAYER_ULT_UPDATE, localPlayer, playerStats.ult)

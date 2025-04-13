@@ -1,5 +1,6 @@
 ## 2025.04.13
 - fix an issue when the player has an ult equipped that has no internal ID thanks to @DakJaniels
+- fix undefined global variables found by @DakJaniels
 
 ## 2025.04.09
 - update documentation
