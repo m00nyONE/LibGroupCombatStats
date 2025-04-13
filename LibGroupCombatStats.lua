@@ -865,8 +865,7 @@ local function onPlayerUltTypeUpdate(unitTag, _)
     playerUltTypeObservableTable.lastChange = GetGameTimeMilliseconds()
 end
 
-local function onSyncRequestReceived(unitTag, _)
-    if AreUnitsEqual(unitTag, localPlayer) then return end
+local function onSyncRequestReceived()
     if not IsUnitGrouped(localPlayer) then return end
 
     zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
@@ -882,7 +881,7 @@ local function onMessageUltTypeUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
     if data.syncRequest then
-        onSyncRequestReceived(unitTag)
+        onSyncRequestReceived()
     end
 
     local charName = GetUnitName(unitTag)
