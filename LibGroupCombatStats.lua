@@ -99,6 +99,77 @@ local function Log(category, level, ...)
     if type(logger.Log)=="function" then logger:Log(level, ...) end
 end
 
+---@generic T: table, K, V
+---@type fun(sorce:T, dest?:T):T
+---@generic T: table, K, V
+---@param source T Source table to copy
+---@param dest? T Destination table to copy to
+---@return T # Copied table
+local function deepTableCopy(source, dest)
+    dest = dest or {}
+
+    -- Create a weak table to track already copied tables
+    local alreadySeen = setmetatable({}, { __mode = "k" })
+    alreadySeen[source] = dest
+
+    -- Set the metatable first
+    setmetatable(dest, getmetatable(source))
+
+    -- Inner recursive function that handles the actual copying
+    local function recursiveCopy(src, dst)
+        for k, v in pairs(src) do
+            if type(v) == "table" then
+                -- If we've already seen this table, use the existing copy
+                if alreadySeen[v] then
+                    dst[k] = alreadySeen[v]
+                else
+                    -- Create new table and register it in alreadySeen
+                    local newTable = {}
+                    alreadySeen[v] = newTable
+
+                    -- Handle table keys that are themselves tables
+                    if type(k) == "table" then
+                        local newKey
+                        if alreadySeen[k] then
+                            newKey = alreadySeen[k]
+                        else
+                            newKey = {}
+                            alreadySeen[k] = newKey
+                            recursiveCopy(k, newKey)
+                        end
+                        dst[newKey] = newTable
+                    else
+                        dst[k] = newTable
+                    end
+
+                    -- Copy metatable if present
+                    local meta = getmetatable(v)
+                    if meta then
+                        if alreadySeen[meta] then
+                            setmetatable(newTable, alreadySeen[meta])
+                        else
+                            local newMeta = {}
+                            alreadySeen[meta] = newMeta
+                            recursiveCopy(meta, newMeta)
+                            setmetatable(newTable, newMeta)
+                        end
+                    end
+
+                    -- Now recursively copy the content
+                    recursiveCopy(v, newTable)
+                end
+            else
+                -- For non-table values, just copy directly
+                dst[k] = v
+            end
+        end
+    end
+
+    -- Start the recursive copy process
+    recursiveCopy(source, dest)
+
+    return dest
+end
 
 --- constants
 local localPlayer = "player"
@@ -309,7 +380,7 @@ end
 -- Returns a list of functionalities currently enabled in the library
 -- @return (string, string, string): Currently enabled functionalities ("DPS", "HPS", "ULT")
 function _CombatStatsObject:GetStatsShared()
-    return ZO_DeepTableCopy(_statsShared)
+    return deepTableCopy(_statsShared)
 end
 -- Returns key, value of groupStats
 -- @return (string, table): key value pairs of groupStats
