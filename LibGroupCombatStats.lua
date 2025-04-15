@@ -972,9 +972,15 @@ local function onMessageUltValueUpdateReceived(unitTag, data)
     local charName = GetUnitName(unitTag)
     if not groupStats[charName] then OnGroupChange() end
 
-    data.ultValue = data.ultValue * 2
-
-    groupStats[charName].ult.ultValue = data.ultValue
+    -- Check if data.ultValue exists before trying to access it
+    if data and data.ultValue then
+        data.ultValue = data.ultValue * 2
+        groupStats[charName].ult.ultValue = data.ultValue
+    else
+        -- Log error and/or set a default value if ultValue is missing
+        Log("events", LOG_LEVEL_WARNING, "Received nil ultValue in message from " .. charName)
+        groupStats[charName].ult.ultValue = 0
+    end
 
     groupStats[charName].tag = unitTag
 end
