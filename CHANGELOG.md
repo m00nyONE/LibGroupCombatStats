@@ -1,4 +1,5 @@
 ## 2025.05.05
+- fix a race condition that could occur when leaving or entering an instance. Thanks to everyone reporting this :-)
 - merge optimizations by @DakJaniels
 
 ## 2025.04.16

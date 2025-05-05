@@ -883,7 +883,9 @@ local function onMessageUltTypeUpdateReceived(unitTag, data)
     end
 
     local charName = GetUnitName(unitTag)
+    if not charName then return end
     if not groupStats[charName] then OnGroupChange() end
+    if not groupStats[charName] then return end
 
     groupStats[charName].ult.ult1ID = _ultInternalIdMap[data.ult1ID]
     groupStats[charName].ult.ult2ID = _ultInternalIdMap[data.ult2ID]
@@ -897,7 +899,9 @@ local function onMessageUltValueUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
     local charName = GetUnitName(unitTag)
+    if not charName then return end
     if not groupStats[charName] then OnGroupChange() end
+    if not groupStats[charName] then return end
 
     -- Check if data.ultValue exists before trying to access it
     if data and data.ultValue then
@@ -915,7 +919,9 @@ local function onMessageDpsUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
     local charName = GetUnitName(unitTag)
+    if not charName then return end
     if not groupStats[charName] then OnGroupChange() end
+    if not groupStats[charName] then return end
 
     groupStats[charName].dps.dmgType = data.dmgType
     groupStats[charName].dps.dmg = data.dmg
@@ -927,7 +933,9 @@ local function onMessageHpsUpdateReceived(unitTag, data)
     if AreUnitsEqual(unitTag, localPlayer) then return end
 
     local charName = GetUnitName(unitTag)
+    if not charName then return end
     if not groupStats[charName] then OnGroupChange() end
+    if not groupStats[charName] then return end
 
     groupStats[charName].hps.overheal = data.overheal
     groupStats[charName].hps.hps = data.hps
