@@ -99,6 +99,77 @@ local function Log(category, level, ...)
     if type(logger.Log)=="function" then logger:Log(level, ...) end
 end
 
+---@generic T: table, K, V
+---@type fun(sorce:T, dest?:T):T
+---@generic T: table, K, V
+---@param source T Source table to copy
+---@param dest? T Destination table to copy to
+---@return T # Copied table
+local function deepTableCopy(source, dest)
+    dest = dest or {}
+
+    -- Create a weak table to track already copied tables
+    local alreadySeen = setmetatable({}, { __mode = "k" })
+    alreadySeen[source] = dest
+
+    -- Set the metatable first
+    setmetatable(dest, getmetatable(source))
+
+    -- Inner recursive function that handles the actual copying
+    local function recursiveCopy(src, dst)
+        for k, v in pairs(src) do
+            if type(v) == "table" then
+                -- If we've already seen this table, use the existing copy
+                if alreadySeen[v] then
+                    dst[k] = alreadySeen[v]
+                else
+                    -- Create new table and register it in alreadySeen
+                    local newTable = {}
+                    alreadySeen[v] = newTable
+
+                    -- Handle table keys that are themselves tables
+                    if type(k) == "table" then
+                        local newKey
+                        if alreadySeen[k] then
+                            newKey = alreadySeen[k]
+                        else
+                            newKey = {}
+                            alreadySeen[k] = newKey
+                            recursiveCopy(k, newKey)
+                        end
+                        dst[newKey] = newTable
+                    else
+                        dst[k] = newTable
+                    end
+
+                    -- Copy metatable if present
+                    local meta = getmetatable(v)
+                    if meta then
+                        if alreadySeen[meta] then
+                            setmetatable(newTable, alreadySeen[meta])
+                        else
+                            local newMeta = {}
+                            alreadySeen[meta] = newMeta
+                            recursiveCopy(meta, newMeta)
+                            setmetatable(newTable, newMeta)
+                        end
+                    end
+
+                    -- Now recursively copy the content
+                    recursiveCopy(v, newTable)
+                end
+            else
+                -- For non-table values, just copy directly
+                dst[k] = v
+            end
+        end
+    end
+
+    -- Start the recursive copy process
+    recursiveCopy(source, dest)
+
+    return dest
+end
 
 --- constants
 local localPlayer = "player"
@@ -195,28 +266,25 @@ ObservableTable.__index = ObservableTable
 -- @return (table): A new instance of ObservableTable
 function ObservableTable:New(onChangeCallback, fireAfterLastChangeMS, initTable)
     -- Validate that the callback is a function
-    if not IsCallable(onChangeCallback) then
-        Log("debug", LOG_LEVEL_ERROR, "onChangeCallback must be a function")
-        return nil
-    end
+    assert(type(onChangeCallback) == "function", "onChangeCallback must be a function")
 
     -- Define the internal onChange function to handle delayed callbacks
-    local onChange = function(self)
+    local onChange = function(instance)
         -- If no delay is specified, trigger the callback immediately
-        if self._fireAfterLastChangeMS == 0 then
-            self._onChangeCallback(self._data)
+        if instance._fireAfterLastChangeMS == 0 then
+            instance._onChangeCallback(instance._data)
             return
         end
 
         -- Unique update event name for this instance
-        local updateName = self._eventId
+        local updateName = instance._eventId
 
         -- Unregister any previous delayed callback
         EM:UnregisterForUpdate(updateName)
 
         -- Register a new delayed callback
-        EM:RegisterForUpdate(updateName, self._fireAfterLastChangeMS, function()
-            self._onChangeCallback(self._data) -- Trigger the callback with the current table data
+        EM:RegisterForUpdate(updateName, instance._fireAfterLastChangeMS, function()
+            instance._onChangeCallback(instance._data) -- Trigger the callback with the current table data
             EM:UnregisterForUpdate(updateName) -- Ensure the callback is unregistered after execution
         end)
     end
@@ -313,7 +381,7 @@ end
 -- Returns a list of functionalities currently enabled in the library
 -- @return (string, string, string): Currently enabled functionalities ("DPS", "HPS", "ULT")
 function _CombatStatsObject:GetStatsShared()
-    return ZO_DeepTableCopy(_statsShared)
+    return deepTableCopy(_statsShared)
 end
 -- Returns key, value of groupStats
 -- @return (string, table): key value pairs of groupStats
@@ -517,8 +585,8 @@ end
 -- @param eventName (string): The name of the event to register for
 -- @param callback (function): The function to be called when the event is triggered
 function _CombatStatsObject:RegisterForEvent(eventName, callback)
-    if not IsCallable(callback) then Log("events", LOG_LEVEL_ERROR, "callback is not a function") return end
-    if type(eventName) ~= "string" then Log("events", LOG_LEVEL_ERROR, "eventName is not a string") return end
+    assert(type(callback) == "function", "callback must be a function")
+    assert(type(eventName) == "string", "eventName must be a string")
 
     LocalEM:RegisterCallback(eventName, callback)
     Log("events", LOG_LEVEL_DEBUG, "callback for %s registered", eventName)
@@ -527,8 +595,8 @@ end
 -- @param eventName (string): The name of the event to unregister from
 -- @param callback (function): The callback function to unregister
 function _CombatStatsObject:UnregisterForEvent(eventName, callback)
-    if not IsCallable(callback) then Log("events", LOG_LEVEL_ERROR, "callback is not a function") return end
-    if type(eventName) ~= "string" then Log("events", LOG_LEVEL_ERROR, "eventName is not a string") return end
+    assert(type(callback) == "function", "callback must be a function")
+    assert(type(eventName) == "string", "eventName must be a string")
 
     Log("events", LOG_LEVEL_DEBUG, "callback for %s unregistered", eventName)
     LocalEM:UnregisterCallback(eventName, callback)
@@ -695,7 +763,7 @@ end
 
 --- update player values
 local function updatePlayerUltValue()
-    playerStats.ult.ultValue = zo_max(0, zo_min(500, GetUnitPower(localPlayer, POWERTYPE_ULTIMATE)))
+    playerStats.ult.ultValue = zo_max(0, zo_min(500, GetUnitPower(localPlayer, COMBAT_MECHANIC_FLAGS_ULTIMATE)))
     LocalEM:FireCallbacks(EVENT_PLAYER_ULT_VALUE_UPDATE, localPlayer, playerStats.ult)
 end
 local function updatePlayerDps()
@@ -721,17 +789,18 @@ local function updatePlayerDps()
     playerStats.dps.dps = dps
 end
 local function updatePlayerHps()
-    local overheal = 0
-    local hps = 0
-
     local data = combat.GetData()
 
-    if data.HPSOut == 0 or data.OHPSOut == 0 then
-        overheal, hps = 0, 0
+    -- If no HPS data available, set values to zero
+    if data.HPSOut == 0 and data.OHPSOut == 0 then
+        playerStats.hps.overheal = 0
+        playerStats.hps.hps = 0
+        return
     end
 
+    -- Otherwise calculate values from the data
     playerStats.hps.overheal = zo_floor(data.OHPSOut / 1000)
-    playerStats.hps.hps = zo_floor(data.HPSOut / 1000 )
+    playerStats.hps.hps = zo_floor(data.HPSOut / 1000)
 end
 local function updatePlayerSlottedUlts()
     -- reset values
@@ -743,18 +812,18 @@ local function updatePlayerSlottedUlts()
     -- populate values
     playerStats.ult.ult1ID = GetSlotBoundId(ACTION_BAR_ULTIMATE_SLOT_INDEX + 1, HOTBAR_CATEGORY_PRIMARY)
     playerStats.ult.ult2ID = GetSlotBoundId(ACTION_BAR_ULTIMATE_SLOT_INDEX + 1, HOTBAR_CATEGORY_BACKUP)
-    playerStats.ult.ult1Cost = GetAbilityCost(playerStats.ult.ult1ID)
-    playerStats.ult.ult2Cost = GetAbilityCost(playerStats.ult.ult2ID)
+    playerStats.ult.ult1Cost = GetAbilityCost(playerStats.ult.ult1ID, COMBAT_MECHANIC_FLAGS_ULTIMATE, nil, localPlayer)
+    playerStats.ult.ult2Cost = GetAbilityCost(playerStats.ult.ult2ID, COMBAT_MECHANIC_FLAGS_ULTIMATE, nil, localPlayer)
 
     LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
 end
 local function updatePlayerUltimateCost()
-    local ult1Cost = GetAbilityCost(playerStats.ult.ult1ID)
-    local ult2Cost = GetAbilityCost(playerStats.ult.ult2ID)
+    local ult1Cost = GetAbilityCost(playerStats.ult.ult1ID, COMBAT_MECHANIC_FLAGS_ULTIMATE, nil, localPlayer)
+    local ult2Cost = GetAbilityCost(playerStats.ult.ult2ID, COMBAT_MECHANIC_FLAGS_ULTIMATE, nil, localPlayer)
     if playerStats.ult.ult1Cost == ult1Cost and playerStats.ult.ult2Cost == ult2Cost then return end
 
-    playerStats.ult.ult1Cost = GetAbilityCost(playerStats.ult.ult1ID)
-    playerStats.ult.ult2Cost = GetAbilityCost(playerStats.ult.ult2ID)
+    playerStats.ult.ult1Cost = GetAbilityCost(playerStats.ult.ult1ID, COMBAT_MECHANIC_FLAGS_ULTIMATE, nil, localPlayer)
+    playerStats.ult.ult2Cost = GetAbilityCost(playerStats.ult.ult2ID, COMBAT_MECHANIC_FLAGS_ULTIMATE, nil, localPlayer)
     LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
 end
 local function updatePlayerUltActivatedSets()
@@ -790,7 +859,9 @@ local function registerPlayerStatsUpdateFunctions()
     EM:RegisterForUpdate(lib_name .. "_dpsUpdate", PLAYER_DPS_UPDATE_INTERVAL, updatePlayerDps)
     EM:RegisterForUpdate(lib_name .. "_hpsUpdate", PLAYER_HPS_UPDATE_INTERVAL, updatePlayerHps)
     EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED, updatePlayerSlottedUlts)
+    EM:AddFilterForEvent(lib_name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED, REGISTER_FILTER_POWER_TYPE, COMBAT_MECHANIC_FLAGS_ULTIMATE, REGISTER_FILTER_UNIT_TAG, localPlayer)
     EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE, updatePlayerUltActivatedSets)
+    EM:AddFilterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE, REGISTER_FILTER_BAG_ID, BAG_WORN)
     Log("events", LOG_LEVEL_DEBUG, "playerStatsUpdate functions registered")
 end
 
@@ -902,9 +973,15 @@ local function onMessageUltValueUpdateReceived(unitTag, data)
     local charName = GetUnitName(unitTag)
     if not groupStats[charName] then OnGroupChange() end
 
-    data.ultValue = data.ultValue * 2
-
-    groupStats[charName].ult.ultValue = data.ultValue
+    -- Check if data.ultValue exists before trying to access it
+    if data and data.ultValue then
+        data.ultValue = data.ultValue * 2
+        groupStats[charName].ult.ultValue = data.ultValue
+    else
+        -- Log error and/or set a default value if ultValue is missing
+        Log("events", LOG_LEVEL_WARNING, "Received nil ultValue in message from " .. charName)
+        groupStats[charName].ult.ultValue = 0
+    end
 
     groupStats[charName].tag = unitTag
 end
