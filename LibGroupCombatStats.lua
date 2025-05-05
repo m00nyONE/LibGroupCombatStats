@@ -88,9 +88,6 @@ end
 
 
 --- utility functions
-local function IsCallable(callback)
-    return type(callback) == "function"
-end
 local function Log(category, level, ...)
     if not mainLogger then return end
     if category == "debug" and not lib_debug then return end
