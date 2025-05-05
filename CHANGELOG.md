@@ -1,3 +1,6 @@
+## 2025.05.05
+- merge optimizations by @DakJaniels
+
 ## 2025.04.16
 - dump LibCombat dependency up to 81
 
