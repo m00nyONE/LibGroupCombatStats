@@ -1,3 +1,6 @@
+## 2025.07.24
+- fix a potential bug that can occur when relogging with a different char
+
 ## 2025.05.05
 - fix a race condition that could occur when leaving or entering an instance. Thanks to everyone reporting this :-)
 - merge optimizations by @DakJaniels
