@@ -1203,6 +1203,7 @@ EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
     EM:UnregisterForEvent(lib_name, EVENT_ADD_ON_LOADED)
 
     generateUltIdMaps()
+    --lib.ultIdMap = _ultInternalIdMap
     declareLGBProtocols()
 
     -- register onPlayerActivated callback
