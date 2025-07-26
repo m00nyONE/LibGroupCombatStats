@@ -1019,7 +1019,7 @@ end
 function lib.RegisterAddon(addonName, neededStats)
     if not addonName or not neededStats then
         Log("main", LOG_LEVEL_ERROR, "addonName & neededStats must be provided")
-        return
+        return nil
     end
 
     if _registeredAddons[addonName] then
