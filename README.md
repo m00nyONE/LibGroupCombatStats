@@ -21,6 +21,8 @@ To use the library in your addon, you need to:
 1. Register your addon with the library.
 2. Use events to receive updates or API functions to query specific data.
 
+Have a look at the full documentation here: [Github Pages](https://m00nyone.github.io/LibGroupCombatStats/)
+
 ---
 
 ## Registering an Addon

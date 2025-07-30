@@ -29,8 +29,8 @@
             - GetUnitULT(unitTag) -- Retrieves ultimate information for a specific unit in the group
             - HasUnitUltimatesSlotted(unitTag, listOfAbilityIDs) -- Checks if the group member has specific ultimates slotted
 ]]--
-
---- general initialization
+--[[ doc.lua begin ]]
+--- @class LibGroupCombatStats
 local lib = {
     name = "LibGroupCombatStats",
     version = "dev",
@@ -39,6 +39,8 @@ local lib_debug = false
 local lib_name = lib.name
 local lib_version = lib.version
 _G[lib_name] = lib
+
+--[[ doc.lua end ]]
 
 local HPS = "HPS"
 local DPS = "DPS"
@@ -116,6 +118,8 @@ local PLAYER_ULT_VALUE_SEND_INTERVAL = 2000
 local PLAYER_DPS_SEND_INTERVAL = 2000
 local PLAYER_HPS_SEND_INTERVAL = 2000
 
+--[[ doc.lua begin ]]
+
 local ULT_ACTIVATED_SET_LIST = {
     {
         name = "saxhleel",
@@ -146,11 +150,9 @@ local ULT_ACTIVATED_SET_LIST = {
 --- export set list, so it can be used to map the ultActivatedSetID to a real set
 lib.ULT_ACTIVATED_SET_LIST = ULT_ACTIVATED_SET_LIST
 
-
 --- often used variables
 local PLAYER_CHARACTER_NAME = GetUnitName(localPlayer)
 local PLAYER_DISPLAY_NAME = GetUnitDisplayName(localPlayer)
-
 
 --- exported constants
 local DAMAGE_UNKNOWN = 0
@@ -181,6 +183,7 @@ lib.EVENT_PLAYER_ULT_UPDATE = EVENT_PLAYER_ULT_UPDATE
 lib.EVENT_PLAYER_ULT_VALUE_UPDATE = EVENT_PLAYER_ULT_VALUE_UPDATE --- usually not needed
 lib.EVENT_PLAYER_ULT_TYPE_UPDATE = EVENT_PLAYER_ULT_TYPE_UPDATE --- usually not needed
 
+--[[ doc.lua end ]]
 
 --- The ObservableTable allows for firing callbacks when values are updated
 local ObservableTable = {}
@@ -256,6 +259,33 @@ function ObservableTable:__newindex(key, value)
     end
 end
 
+--[[ doc.lua begin ]]
+
+--- @class ult
+--- @field ultValue number raw ult points
+--- @field ult1ID number id of the frontbar ultimate
+--- @field ult2ID number id of the backbar ultimate
+--- @field ult1Cost number cost of the ult on the frontbar
+--- @field ult2Cost number cost of the ult on the backbar
+--- @field ultActivatedSetID number ult activated set the player is wearing
+--- @field _lastUpdated number timestamp of the last table update
+--- @field _lastChanged number timestamp of the last table real change
+
+--- @class dps
+--- @field dmgType number damage type [0..2]
+--- @field dps number single target dps in thousands
+--- @field dmg number overall dps in thousands or overall damage in millions
+--- @field _lastUpdated number timestamp of the last table update
+--- @field _lastChanged number timestamp of the last table real change
+
+--- @class hps
+--- @field hps number heal per second the group is consuming
+--- @field overheal number raw heal per second that is pushed out
+--- @field _lastUpdated number timestamp of the last table update
+--- @field _lastChanged number timestamp of the last table real change
+
+--[[ doc.lua end ]]
+
 -- groupStats base table containing all collected data
 local groupStats = {
     [PLAYER_CHARACTER_NAME] = {
@@ -294,23 +324,25 @@ local groupStats = {
 }
 local playerStats = groupStats[PLAYER_CHARACTER_NAME] -- local alias for the stats of the player
 
+--[[ doc.lua begin ]]
 
 --- _CombatStatsObject which can be used by other addons to get data or register callbacks for events - it acts as a communication gateway between addons & the lib
+--- @class CombatStatsObject
 local _CombatStatsObject = {}
 _CombatStatsObject.__index = _CombatStatsObject
--- Constructor for the _CombatStatsObject
--- @return (table): A new instance of _CombatStatsObject
+--- Constructor for the _CombatStatsObject
+--- @return CombatStatsObject A new instance of _CombatStatsObject
 function _CombatStatsObject:New()
     local obj = setmetatable({}, _CombatStatsObject)
     return obj
 end
--- Returns a list of functionalities currently enabled in the library
--- @return (string, string, string): Currently enabled functionalities ("DPS", "HPS", "ULT")
+--- Returns a list of functionalities currently enabled in the library
+--- @return (string, string, string): Currently enabled functionalities ("DPS", "HPS", "ULT")
 function _CombatStatsObject:GetStatsShared()
     return ZO_DeepTableCopy(_statsShared)
 end
--- Returns key, value of groupStats
--- @return (string, table): key value pairs of groupStats
+--- Returns key, value of groupStats
+--- @return (string, table) key value pairs of groupStats
 function _CombatStatsObject:Iterate()
     local key, value
     return function()
@@ -355,21 +387,23 @@ function _CombatStatsObject:Iterate()
         }
     end
 end
--- metatable version of _CombatStatsObject:Iterate()
+--- metatable version of _CombatStatsObject:Iterate()
+--- @return (string, table) key value pairs of groupStats
 function _CombatStatsObject:__pairs()
     return self:Iterate()
 end
--- Returns the number of group members in "groupStats"
--- @return (number): the number of units in the group
+--- Returns the number of group members in "groupStats"
+--- @return (number): the number of units in the group
 function _CombatStatsObject:GetGroupSize()
     return #groupStats
 end
--- metatable version of _CombatStatsObject:GetGroupSize()
+--- metatable version of _CombatStatsObject:GetGroupSize()
+--- @return (number): the number of units in the group
 function _CombatStatsObject:__len()
     return self:GetGroupSize()
 end
--- Retrieves a copy of the current group statistics
--- @return (table): A table containing group statistics (cloned from the internal state)
+--- Retrieves a copy of the current group statistics
+--- @return table A table containing group statistics (cloned from the internal state)
 function _CombatStatsObject:GetGroupStats()
     local result = {}
     for tag, stats in self:Iterate() do
@@ -378,9 +412,9 @@ function _CombatStatsObject:GetGroupStats()
 
     return result
 end
--- Retrieves statistics for a specific unit in the group
--- @param unitTag (string): The unitTag of the group member (e.g., "group1")
--- @return (table or nil): A table containing the unit's statistics, or nil if the unit is not found
+--- Retrieves statistics for a specific unit in the group
+--- @param unitTag string The unitTag of the group member (e.g., "group1")
+--- @return table A table containing the unit's statistics, or nil if the unit is not found
 function _CombatStatsObject:GetUnitStats(unitTag)
     local characterName = GetUnitName(unitTag)
     local unit = groupStats[characterName]
@@ -424,9 +458,9 @@ function _CombatStatsObject:GetUnitStats(unitTag)
 
     return result
 end
--- Retrieves DPS information for a specific unit in the group
--- @param unitTag (string): The unitTag of the group member
--- @return (table): The type of damage, total damage, DPS value, and the timestamp of the last update and last value update
+--- Retrieves DPS information for a specific unit in the group
+--- @param unitTag string The unitTag of the group member
+--- @return dps DPSTable The type of damage, total damage, DPS value, and the timestamp of the last update and last value update
 function _CombatStatsObject:GetUnitDPS(unitTag)
     local characterName = GetUnitName(unitTag)
     local unit = groupStats[characterName]
@@ -437,9 +471,9 @@ function _CombatStatsObject:GetUnitDPS(unitTag)
 
     return unit.dps
 end
--- Retrieves HPS information for a specific unit in the group
--- @param unitTag (string): The unitTag of the group member
--- @return (table): The overhealing value, HPS value, and the timestamp of the last update and last value update
+--- Retrieves HPS information for a specific unit in the group
+--- @param unitTag string The unitTag of the group member
+--- @return hps HPSTable The overhealing value, HPS value, and the timestamp of the last update and last value update
 function _CombatStatsObject:GetUnitHPS(unitTag)
     local characterName = GetUnitName(unitTag)
     local unit = groupStats[characterName]
@@ -450,10 +484,10 @@ function _CombatStatsObject:GetUnitHPS(unitTag)
 
     return unit.hps
 end
--- Retrieves ultimate information for a specific unit in the group
--- @param unitTag (string): The unitTag of the group member
--- @return (table): The current ultimate value, ultimate 1 ID, ultimate 1 cost, ultimate 2 ID, ultimate 2 cost, and the ID for an ultActivated set, and the timestamp of the last update and last value update
 -- TODO: hasUnitULTAbilityID
+--- Retrieves ultimate information for a specific unit in the group
+--- @param unitTag string The unitTag of the group member
+--- @return ult ultTable The current ultimate value, ultimate 1 ID, ultimate 1 cost, ultimate 2 ID, ultimate 2 cost, and the ID for an ultActivated set, and the timestamp of the last update and last value update
 function _CombatStatsObject:GetUnitULT(unitTag)
     local characterName = GetUnitName(unitTag)
     local unit = groupStats[characterName]
@@ -464,10 +498,10 @@ function _CombatStatsObject:GetUnitULT(unitTag)
 
     return unit.ult
 end
--- Checks if the group member has specific ultimates slotted
--- @param unitTag (string): The unitTag of the group member
--- @param listOfAbilityIDs (list of numbers): The abilityIDs that need to be checked for ( {id1, id2, id3} )
--- @return (boolean): group member has ultimate ability equipped
+--- Checks if the group member has specific ultimates slotted
+--- @param unitTag string The unitTag of the group member
+--- @param listOfAbilityIDs number[] The abilityIDs that need to be checked for ( {id1, id2, id3} )
+--- @return boolean hasEquipped group member has ultimate ability equipped
 function _CombatStatsObject:HasUnitUltimatesSlotted(unitTag, listOfAbilityIDs)
     local characterName = GetUnitName(unitTag)
     local unit = groupStats[characterName]
@@ -490,10 +524,10 @@ function _CombatStatsObject:HasUnitUltimatesSlotted(unitTag, listOfAbilityIDs)
     return false
 end
 --- WARNING: This will soon be changed! Thats why this function is not documented in the API - use the new LibSetDetection v4 by @ExoY94 for that when it's ready
--- Checks if the group member has a specific ultimate activated set slotted
--- @param unitTag (string): The unitTag of the group member
--- @param ultActivatedSetID (number): The ultActivatedSetID that needs to be checked for
--- @return (boolean): group member has ultActivatedSet equipped
+--- Checks if the group member has a specific ultimate activated set slotted
+--- @param unitTag string The unitTag of the group member
+--- @param ultActivatedSetID number The ultActivatedSetID that needs to be checked for
+--- @return boolean hasEquipped group member has ultActivatedSet equipped
 function _CombatStatsObject:HasUnitUltActivatedSetSlotted(unitTag, ultActivatedSetID)
     local characterName = GetUnitName(unitTag)
     local unit = groupStats[characterName]
@@ -507,9 +541,9 @@ function _CombatStatsObject:HasUnitUltActivatedSetSlotted(unitTag, ultActivatedS
     return false
 end
 
--- Registers a callback function for a specified event
--- @param eventName (string): The name of the event to register for
--- @param callback (function): The function to be called when the event is triggered
+--- Registers a callback function for a specified event
+--- @param eventName string The name of the event to register for
+--- @param callback function The function to be called when the event is triggered
 function _CombatStatsObject:RegisterForEvent(eventName, callback)
     assert(type(callback) == "function", "callback must be a function")
     assert(type(eventName) == "string", "eventName must be a string")
@@ -517,9 +551,9 @@ function _CombatStatsObject:RegisterForEvent(eventName, callback)
     LocalEM:RegisterCallback(eventName, callback)
     Log("events", LOG_LEVEL_DEBUG, "callback for %s registered", eventName)
 end
--- Unregisters a callback function for a specified event
--- @param eventName (string): The name of the event to unregister from
--- @param callback (function): The callback function to unregister
+--- Unregisters a callback function for a specified event
+--- @param eventName string The name of the event to unregister from
+--- @param callback function The callback function to unregister
 function _CombatStatsObject:UnregisterForEvent(eventName, callback)
     assert(type(callback) == "function", "callback must be a function")
     assert(type(eventName) == "string", "eventName must be a string")
@@ -528,6 +562,7 @@ function _CombatStatsObject:UnregisterForEvent(eventName, callback)
     LocalEM:UnregisterCallback(eventName, callback)
 end
 
+--[[ doc.lua end ]]
 
 --- group change tracking
 local function OnGroupChange()
@@ -758,7 +793,7 @@ local function updatePlayerUltActivatedSets()
 
     -- populate values
     for id, set in ipairs(ULT_ACTIVATED_SET_LIST) do
-        local _, _, _, nonPerfectedNum, _, _id, perfectedNum = GetItemLinkSetInfo(set.link, true)
+        local _, _, _, nonPerfectedNum, _, _, perfectedNum = GetItemLinkSetInfo(set.link, true)
         local num = nonPerfectedNum + (perfectedNum or 0)
 
         if num >= set.minEquipped then
@@ -1015,7 +1050,13 @@ local function enablePlayerBroadcastULT()
     Log("events", LOG_LEVEL_DEBUG, "ULT broadcast enabled")
 end
 
---- exposed API Calls
+-- exposed API Calls
+
+--[[ doc.lua begin ]]
+--- registers an addon and returns a _CombatStatsObject
+--- @param addonName string name of the addon to register
+--- @param neededStats table array of combat stats to listen to
+--- @return CombatStatsObject allows for interaction with the API and also to register events
 function lib.RegisterAddon(addonName, neededStats)
     if not addonName or not neededStats then
         Log("main", LOG_LEVEL_ERROR, "addonName & neededStats must be provided")
@@ -1046,6 +1087,7 @@ function lib.RegisterAddon(addonName, neededStats)
     Log("debug", LOG_LEVEL_INFO, "Addon " .. addonName .. " registered.")
     return _CombatStatsObject:New()
 end
+--[[ doc.lua end ]]
 
 --- generate Ultimate ID maps
 local function generateUltIdMaps()

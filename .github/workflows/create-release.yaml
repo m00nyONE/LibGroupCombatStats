@@ -9,6 +9,11 @@ on:
       - release # to be changed to main with schedule
 
 jobs:
+  docs:
+    if: github.repository_owner == 'm00nyONE'
+    uses: ./.github/workflows/_generate-docs.yml
+    permissions:
+      contents: write
   release:
     name: "release"
     runs-on: ubuntu-latest
