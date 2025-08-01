@@ -1130,11 +1130,11 @@ end
 
 --- Addon initialization
 local function onPlayerActivated(_, initial)
-   -- check if it's the first call of onPlayerActivated - for example after logging in or after a reloadui
-    if not _isFirstOnPlayerActivated then return end
-
     -- set the player character name again to ensure that after swapping a character it gets updated
     PLAYER_CHARACTER_NAME = GetUnitName(localPlayer)
+
+   -- check if it's the first call of onPlayerActivated - for example after logging in or after a reloadui
+    if not _isFirstOnPlayerActivated then return end
 
     Log("debug", LOG_LEVEL_DEBUG, "onPlayerActivated called")
 
