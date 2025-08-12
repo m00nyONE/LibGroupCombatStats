@@ -1462,8 +1462,6 @@ EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
     --lib._skillLinesInternalIdMap = _skillLinesInternalIdMap
     --lib._skillLinesIdMap = _skillLinesIdMap
 
-    d(GetClassIndexById(GetUnitClassId("player")))
-
     declareLGBProtocols()
 
     -- register onPlayerActivated callback
