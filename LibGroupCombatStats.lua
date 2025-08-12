@@ -199,6 +199,26 @@ lib.EVENT_PLAYER_ULT_TYPE_UPDATE = EVENT_PLAYER_ULT_TYPE_UPDATE --- usually not 
 
 --[[ doc.lua end ]]
 
+--[[ doc.lua begin ]]
+
+--- Returns the classId which the skillLine originates from
+--- @return number: classId
+function lib.GetClassIdFromSkillLineId(skillLineId)
+    return GetSkillLineClassId(GetSkillLineIndicesFromSkillLineId(skillLineId))
+end
+--- Returns the icon of the class which the skillLine originates from
+--- @return string: texturePath of the base class icon
+function lib.GetClassIconFromSkillLineId(skillLineId)
+    return ZO_GetPlatformClassIcon(lib.GetClassIdFromSkillLineId(skillLineId))
+end
+--- Returns the collectibles class mastery icon of the class which the skillLine originates from
+--- @return string: texturePath of the collectibles class mastery icon
+function lib.GetFancyClassIconFromSkillLineId(skillLineId)
+    return GetCollectibleIcon(GetSkillLineMasteryCollectibleId(skillLineId))
+end
+
+--[[ doc.lua end ]]
+
 --- The ObservableTable allows for firing callbacks when values are updated
 local ObservableTable = {}
 ObservableTable.__index = ObservableTable
