@@ -45,6 +45,7 @@ _G[lib_name] = lib
 local HPS = "HPS"
 local DPS = "DPS"
 local ULT = "ULT"
+local SKILLLINES = "SKILLINES"
 
 local LGB = LibGroupBroadcast
 local EM = EVENT_MANAGER
@@ -59,9 +60,12 @@ local _statsShared = {
     [ULT] = false,
     [DPS] = false,
     [HPS] = false,
+    [SKILLLINES] = false,
 }
 local _ultIdMap = {}
 local _ultInternalIdMap = {}
+local _skillLinesIdMap = {}
+local _skillLinesInternalIdMap = {}
 
 
 --- logging setup
@@ -106,7 +110,8 @@ local MESSAGE_ID_ULTTYPE = 20
 local MESSAGE_ID_ULTVALUE = 21
 local MESSAGE_ID_DPS = 22
 local MESSAGE_ID_HPS = 23
-local MESSAGE_ID_ULTACTIVATEDSETS = 24
+local MESSAGE_ID_SKILLLINES = 24
+local MESSAGE_ID_ULTACTIVATEDSETS = 25
 
 local PLAYER_ULT_VALUE_UPDATE_INTERVAL = 1000
 local PLAYER_DPS_UPDATE_INTERVAL = 1000
@@ -114,9 +119,13 @@ local PLAYER_HPS_UPDATE_INTERVAL = 1000
 
 local PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY = 1000
 local PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY = 1000
+local PLAYER_SKILLINES_SEND_ON_GROUP_CHANGE_DELAY = 2500
 local PLAYER_ULT_VALUE_SEND_INTERVAL = 2000
 local PLAYER_DPS_SEND_INTERVAL = 2000
 local PLAYER_HPS_SEND_INTERVAL = 2000
+
+local MAX_ULT_IDS = 0
+local MAX_SKILL_LINE_IDS = 0
 
 --[[ doc.lua begin ]]
 
@@ -153,6 +162,7 @@ lib.ULT_ACTIVATED_SET_LIST = ULT_ACTIVATED_SET_LIST
 --- often used variables
 local PLAYER_CHARACTER_NAME = GetUnitName(localPlayer)
 local PLAYER_DISPLAY_NAME = GetUnitDisplayName(localPlayer)
+local PLAYER_BASE_CLASS = GetUnitClassId(localPlayer)
 
 --- exported constants
 local DAMAGE_UNKNOWN = 0
@@ -168,18 +178,22 @@ lib.DAMAGE_BOSS = DAMAGE_BOSS
 local EVENT_GROUP_DPS_UPDATE = "EVENT_GROUP_DPS_UPDATE" -- Event triggered when group DPS stats are updated
 local EVENT_GROUP_HPS_UPDATE = "EVENT_GROUP_HPS_UPDATE" -- Event triggered when group HPS stats are updated
 local EVENT_GROUP_ULT_UPDATE = "EVENT_GROUP_ULT_UPDATE" -- Event triggered when group ultimate stats are updated
+local EVENT_GROUP_SKILLLINES_UPDATE = "EVENT_GROUP_SKILLLINES_UPDATE" -- Event triggered when group skill lines are updated
 local EVENT_PLAYER_DPS_UPDATE = "EVENT_PLAYER_DPS_UPDATE" -- Event triggered when player DPS stats are updated
 local EVENT_PLAYER_HPS_UPDATE = "EVENT_PLAYER_HPS_UPDATE" -- Event triggered when player HPS stats are updated
 local EVENT_PLAYER_ULT_UPDATE = "EVENT_PLAYER_ULT_UPDATE" -- Event triggered when player ultimate stats are updated
+local EVENT_PLAYER_SKILLLINES_UPDATE = "EVENT_PLAYER_SKILLLINES_UPDATE" -- Event triggered when player skill lines are updated
 local EVENT_PLAYER_ULT_VALUE_UPDATE = "EVENT_PLAYER_ULT_VALUE_UPDATE" -- Event triggered when player ultimate value stats are updated
 local EVENT_PLAYER_ULT_TYPE_UPDATE = "EVENT_PLAYER_ULT_TYPE_UPDATE" -- Event triggered when player ultimate type stats are updated
 
 lib.EVENT_GROUP_DPS_UPDATE = EVENT_GROUP_DPS_UPDATE
 lib.EVENT_GROUP_HPS_UPDATE = EVENT_GROUP_HPS_UPDATE
 lib.EVENT_GROUP_ULT_UPDATE = EVENT_GROUP_ULT_UPDATE
+lib.EVENT_GROUP_SKILLLINES_UPDATE = EVENT_GROUP_SKILLLINES_UPDATE
 lib.EVENT_PLAYER_DPS_UPDATE = EVENT_PLAYER_DPS_UPDATE
 lib.EVENT_PLAYER_HPS_UPDATE = EVENT_PLAYER_HPS_UPDATE
 lib.EVENT_PLAYER_ULT_UPDATE = EVENT_PLAYER_ULT_UPDATE
+lib.EVENT_PLAYER_SKILLLINES_UPDATE = EVENT_PLAYER_SKILLLINES_UPDATE
 lib.EVENT_PLAYER_ULT_VALUE_UPDATE = EVENT_PLAYER_ULT_VALUE_UPDATE --- usually not needed
 lib.EVENT_PLAYER_ULT_TYPE_UPDATE = EVENT_PLAYER_ULT_TYPE_UPDATE --- usually not needed
 
@@ -284,6 +298,13 @@ end
 --- @field _lastUpdated number timestamp of the last table update
 --- @field _lastChanged number timestamp of the last table real change
 
+---@class skillLines
+---@field first number first skillLine
+---@field second number second skillLine
+---@field third number third skillLine
+---@field _lastUpdated number timestamp of the last table update
+---@field _lastChanged number timestamp of the last table real change
+
 --[[ doc.lua end ]]
 
 -- groupStats base table containing all collected data
@@ -320,6 +341,14 @@ local groupStats = {
             overheal = 0,
             hps = 0,
         }),
+
+        skillLines = ObservableTable:New(function(data)
+            LocalEM:FireCallbacks(EVENT_PLAYER_SKILLLINES_UPDATE, localPlayer, data)
+        end, 10, {
+            first = PLAYER_BASE_CLASS,
+            second = PLAYER_BASE_CLASS,
+            third = PLAYER_BASE_CLASS,
+        })
     }
 }
 local playerStats = groupStats[PLAYER_CHARACTER_NAME] -- local alias for the stats of the player
@@ -355,6 +384,7 @@ function _CombatStatsObject:Iterate()
         local ult = stats.ult
         local dps = stats.dps
         local hps = stats.hps
+        local skillLines = stats.skillLines
         return stats.tag, {
             tag = stats.tag,
             name = stats.name,
@@ -384,6 +414,13 @@ function _CombatStatsObject:Iterate()
                 _lastUpdated = hps._lastUpdated,
                 _lastChanged = hps._lastChanged
             },
+            skillLines = {
+                first = skillLines.first,
+                second = skillLines.second,
+                third = skillLines.third,
+                _lastUpdated = skillLines._lastUpdated,
+                _lastChanged = skillLines._lastChanged
+            }
         }
     end
 end
@@ -425,6 +462,7 @@ function _CombatStatsObject:GetUnitStats(unitTag)
     local ult = unit.ult
     local dps = unit.dps
     local hps = unit.hps
+    local skillLines = unit.skillLines
     local result = {
         tag = unitTag,
         name = unit.name,
@@ -453,6 +491,13 @@ function _CombatStatsObject:GetUnitStats(unitTag)
             overheal = hps.overheal,
             _lastUpdated = hps._lastUpdated,
             _lastChanged = hps._lastChanged
+        },
+        skillLines = {
+            first = skillLines.first,
+            second = skillLines.second,
+            third = skillLines.third,
+            _lastUpdated = skillLines._lastUpdated,
+            _lastChanged = skillLines._lastChanged
         }
     }
 
@@ -497,6 +542,19 @@ function _CombatStatsObject:GetUnitULT(unitTag)
     end
 
     return unit.ult
+end
+--- Retrieves skillLine information for a specific unit in the group
+--- @param unitTag string The unitTag of the group member
+--- @return skillLines skillLinesTable The currently equipped skillLines of the unit (first, second, third) and the timestamp of the last update and last value update
+function _CombatStatsObject:GetUnitSkillLines(unitTag)
+    local characterName = GetUnitName(unitTag)
+    local unit = groupStats[characterName]
+    if not unit then
+        Log("debug", LOG_LEVEL_DEBUG, "unit does not exist in groupStats")
+        return nil
+    end
+
+    return unit.skillLines
 end
 --- Checks if the group member has specific ultimates slotted
 --- @param unitTag string The unitTag of the group member
@@ -576,6 +634,7 @@ local function OnGroupChange()
 
             local isPlayer = AreUnitsEqual(tag, localPlayer)
             local characterName = GetUnitName(tag)
+            local baseClassId = GetUnitClassId(tag)
             _existingGroupCharacters[characterName] = true
 
             if not isPlayer then
@@ -609,6 +668,14 @@ local function OnGroupChange()
                     end, 10, {
                         overheal = 0,
                         hps = 0,
+                    }),
+
+                    skillLines = ObservableTable:New(function(data)
+                        LocalEM:FireCallbacks(EVENT_GROUP_SKILLLINES_UPDATE, groupStats[characterName].tag, data)
+                    end, 10, {
+                        first = baseClassId,
+                        second = baseClassId,
+                        third = baseClassId,
                     }),
                 }
 
@@ -803,6 +870,23 @@ local function updatePlayerUltActivatedSets()
 
     LocalEM:FireCallbacks(EVENT_PLAYER_ULT_TYPE_UPDATE, localPlayer, playerStats.ult)
 end
+local function updatePlayerSkillLines()
+    local playerSkillLineIds = {}
+
+    for skillLineIndex = 1, GetNumSkillLines(SKILL_TYPE_CLASS) do
+        local _, _, active, _ = GetSkillLineDynamicInfo(SKILL_TYPE_CLASS, skillLineIndex)
+        if active then
+            local id = GetSkillLineId(SKILL_TYPE_CLASS, skillLineIndex)
+            table.insert(playerSkillLineIds, id)
+        end
+    end
+
+    playerStats.skillLines.first = playerSkillLineIds[1]
+    playerStats.skillLines.second = playerSkillLineIds[2]
+    playerStats.skillLines.third = playerSkillLineIds[3]
+
+    LocalEM:FireCallbacks(EVENT_PLAYER_SKILLLINES_UPDATE, localPlayer, playerStats.skillLines)
+end
 local function unregisterPlayerStatsUpdateFunctions()
     combat.Unregister()
     EM:UnregisterForUpdate(lib_name .. "_ultValueUpdate")
@@ -823,6 +907,7 @@ local function registerPlayerStatsUpdateFunctions()
     EM:AddFilterForEvent(lib_name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED, REGISTER_FILTER_POWER_TYPE, COMBAT_MECHANIC_FLAGS_ULTIMATE, REGISTER_FILTER_UNIT_TAG, localPlayer)
     EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE, updatePlayerUltActivatedSets)
     EM:AddFilterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE, REGISTER_FILTER_BAG_ID, BAG_WORN)
+    EM:RegisterForEvent(lib_name .. "_SkillLinesUpdate", EVENT_SKILL_LINE_ADDED, updatePlayerSkillLines)
     Log("events", LOG_LEVEL_DEBUG, "playerStatsUpdate functions registered")
 end
 
@@ -884,11 +969,33 @@ local function broadcastPlayerUltType()
 
     _LGBProtocols[MESSAGE_ID_ULTTYPE]:Send(data)
 end
+local function broadcastPlayerSkillLines()
+    if not IsUnitGrouped(localPlayer) then return end
+    if not _statsShared[SKILLLINES] then return end
+
+    local firstInternalId = _skillLinesIdMap[playerStats.skillLines.first] or 0
+    local secondInternalId = _skillLinesIdMap[playerStats.skillLines.second] or 0
+    local thirdInternalId = _skillLinesIdMap[playerStats.skillLines.third] or 0
+
+    local data = {
+        first = firstInternalId,
+        second = secondInternalId,
+        third = thirdInternalId,
+        --syncRequest = _sendSyncRequest
+    }
+
+    --_sendSyncRequest = false
+
+    _LGBProtocols[MESSAGE_ID_SKILLLINES]:Send(data)
+end
 
 
 --- on demand sent broadcast messages
 -- this ObservableTable is created to have a callback function waiting on further changes before broadcasting to avoid sending multiple messages when swapping loadouts
 local playerUltTypeObservableTable = ObservableTable:New(broadcastPlayerUltType, 2000, {
+    lastChange = GetGameTimeMilliseconds(),
+})
+local playerSkillLinesObservableTable = ObservableTable:New(broadcastPlayerSkillLines, 2000, {
     lastChange = GetGameTimeMilliseconds(),
 })
 
@@ -897,11 +1004,16 @@ local function onPlayerUltTypeUpdate(unitTag, _)
     if unitTag ~= localPlayer then return end
     playerUltTypeObservableTable.lastChange = GetGameTimeMilliseconds()
 end
+local function onPlayerSkillLinesUpdate(unitTag, _)
+    if unitTag ~= localPlayer then return end
+    playerSkillLinesObservableTable.lastChange = GetGameTimeMilliseconds()
+end
 
 local function onSyncRequestReceived()
     if not IsUnitGrouped(localPlayer) then return end
 
     zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+    zo_callLater(broadcastPlayerSkillLines, PLAYER_SKILLINES_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast skillLines so new members are up to date
     zo_callLater(function() broadcastPlayerUltValue(nil, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
 end
 
@@ -977,6 +1089,24 @@ local function onMessageHpsUpdateReceived(unitTag, data)
 
     groupStats[charName].tag = unitTag
 end
+local function onMessageSkillLinesUpdateReceived(unitTag, data)
+    if AreUnitsEqual(unitTag, localPlayer) then return end
+
+    --if data.syncRequest then
+    --    onSyncRequestReceived()
+    --end
+
+    local charName = GetUnitName(unitTag)
+    if not charName then return end
+    if not groupStats[charName] then OnGroupChange() end
+    if not groupStats[charName] then return end
+
+    groupStats[charName].skillLines.first =  _skillLinesInternalIdMap[data.first]
+    groupStats[charName].skillLines.second = _skillLinesInternalIdMap[data.second]
+    groupStats[charName].skillLines.third = _skillLinesInternalIdMap[data.third]
+
+    groupStats[charName].tag = unitTag
+end
 
 local function onMessageUltTypeUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
 local function onMessageUltValueUpdateReceived_V2(unitTag, data) toNewToProcessWarning() end
@@ -989,12 +1119,14 @@ local function OnGroupChangeDelayed()
     zo_callLater(OnGroupChange, 250) -- wait 250ms to avoid any race conditions
     if IsUnitGrouped(localPlayer) then
         zo_callLater(function() broadcastPlayerUltType() end, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+        zo_callLater(function() broadcastPlayerSkillLines() end, PLAYER_SKILLINES_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
         zo_callLater(function() broadcastPlayerUltValue(nil, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
     end
     zo_callLater(function() -- fire events for the player to allow addons to rebuild their group table with new data
         LocalEM:FireCallbacks(EVENT_PLAYER_ULT_UPDATE, localPlayer, playerStats.ult)
         LocalEM:FireCallbacks(EVENT_PLAYER_DPS_UPDATE, localPlayer, playerStats.dps)
         LocalEM:FireCallbacks(EVENT_PLAYER_HPS_UPDATE, localPlayer, playerStats.hps)
+        LocalEM:FireCallbacks(EVENT_PLAYER_SKILLLINES_UPDATE, localPlayer, playerStats.skillLines)
     end, 500)
 end
 local function unregisterGroupEvents()
@@ -1049,6 +1181,17 @@ local function enablePlayerBroadcastULT()
 
     Log("events", LOG_LEVEL_DEBUG, "ULT broadcast enabled")
 end
+local function disablePlayerBroadcastSkillLines()
+    LocalEM:UnregisterCallback(EVENT_PLAYER_SKILLLINES_UPDATE, onPlayerSkillLinesUpdate) -- unregister async skillLines broadcast
+
+    Log("events", LOG_LEVEL_DEBUG, "SKILLINES broadcast disabled")
+end
+local function enablePlayerBroadcastSkillLines()
+    disablePlayerBroadcastSkillLines()
+    LocalEM:RegisterCallback(EVENT_PLAYER_SKILLLINES_UPDATE, onPlayerSkillLinesUpdate) -- register async skillLines broadcast
+
+    Log("events", LOG_LEVEL_DEBUG, "SKILLINES broadcast enabled")
+end
 
 -- exposed API Calls
 
@@ -1077,6 +1220,8 @@ function lib.RegisterAddon(addonName, neededStats)
                 enablePlayerBroadcastHPS()
             elseif stat == ULT then
                 enablePlayerBroadcastULT()
+            elseif stat == SKILLLINES then
+                enablePlayerBroadcastSkillLines()
             end
             Log("debug", LOG_LEVEL_DEBUG, addonName .. " requested " .. stat)
         end
@@ -1088,6 +1233,31 @@ function lib.RegisterAddon(addonName, neededStats)
     return _CombatStatsObject:New()
 end
 --[[ doc.lua end ]]
+
+--- generate SkillLine ID maps
+local function generateSkillLineIdMaps()
+    _skillLinesInternalIdMap = {}
+    _skillLinesIdMap = {}
+
+    local tempSkillLines = {}
+
+    for skillLineIndex = 1, GetNumSkillLines(SKILL_TYPE_CLASS) do
+        local id = GetSkillLineId(SKILL_TYPE_CLASS, skillLineIndex)
+        table.insert(tempSkillLines, id)
+    end
+
+    for internalID, realID in ipairs(tempSkillLines) do
+        _skillLinesIdMap[realID] = internalID
+        _skillLinesInternalIdMap[internalID] = realID
+    end
+
+
+    _skillLinesInternalIdMap[0] = 0
+    _skillLinesIdMap[0] = 0
+
+    MAX_SKILL_LINE_IDS = #_skillLinesInternalIdMap
+end
+
 
 --- generate Ultimate ID maps
 local function generateUltIdMaps()
@@ -1126,15 +1296,18 @@ local function generateUltIdMaps()
 
     _ultInternalIdMap[0] = 0
     _ultIdMap[0] = 0
+
+    MAX_ULT_IDS = #_ultInternalIdMap
 end
 
 --- Addon initialization
 local function onPlayerActivated(_, initial)
-   -- check if it's the first call of onPlayerActivated - for example after logging in or after a reloadui
-    if not _isFirstOnPlayerActivated then return end
-
     -- set the player character name again to ensure that after swapping a character it gets updated
     PLAYER_CHARACTER_NAME = GetUnitName(localPlayer)
+    PLAYER_BASE_CLASS = GetUnitClassId(localPlayer)
+
+   -- check if it's the first call of onPlayerActivated - for example after logging in or after a reloadui
+    if not _isFirstOnPlayerActivated then return end
 
     Log("debug", LOG_LEVEL_DEBUG, "onPlayerActivated called")
 
@@ -1152,6 +1325,7 @@ local function onPlayerActivated(_, initial)
     -- set player ult & sets
     updatePlayerSlottedUlts()
     updatePlayerUltActivatedSets()
+    updatePlayerSkillLines()
 
     _isFirstOnPlayerActivated = false
 end
@@ -1231,12 +1405,29 @@ local function declareLGBProtocols()
     protocolHps:OnData(onMessageHpsUpdateReceived)
     protocolHps:Finalize(protocolOptions)
 
+    local protocolSkillLines = handler:DeclareProtocol(MESSAGE_ID_SKILLLINES, "SkillLines")
+    protocolSkillLines:AddField(CreateNumericField("first", {
+        minValue = 0,
+        maxValue = MAX_SKILL_LINE_IDS,
+    }))
+    protocolSkillLines:AddField(CreateNumericField("second", {
+        minValue = 0,
+        maxValue = MAX_SKILL_LINE_IDS,
+    }))
+    protocolSkillLines:AddField(CreateNumericField("third", {
+        minValue = 0,
+        maxValue = MAX_SKILL_LINE_IDS,
+    }))
+    protocolSkillLines:OnData(onMessageSkillLinesUpdateReceived)
+    protocolSkillLines:Finalize()
+
 
     _LGBHandler = handler
     _LGBProtocols[MESSAGE_ID_ULTTYPE] = protocolUltType
     _LGBProtocols[MESSAGE_ID_ULTVALUE] = protocolUltValue
     _LGBProtocols[MESSAGE_ID_DPS] = protocolDps
     _LGBProtocols[MESSAGE_ID_HPS] = protocolHps
+    _LGBProtocols[MESSAGE_ID_SKILLLINES] = protocolSkillLines
 end
 
 --- register the addon
@@ -1245,7 +1436,14 @@ EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
     EM:UnregisterForEvent(lib_name, EVENT_ADD_ON_LOADED)
 
     generateUltIdMaps()
-    --lib.ultIdMap = _ultInternalIdMap
+    --lib._ultInternalIdMap = _ultInternalIdMap
+    --lib._ultIdMap = _ultIdMap
+    generateSkillLineIdMaps()
+    --lib._skillLinesInternalIdMap = _skillLinesInternalIdMap
+    --lib._skillLinesIdMap = _skillLinesIdMap
+
+    d(GetClassIndexById(GetUnitClassId("player")))
+
     declareLGBProtocols()
 
     -- register onPlayerActivated callback
