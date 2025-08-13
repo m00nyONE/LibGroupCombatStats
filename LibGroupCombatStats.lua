@@ -654,10 +654,11 @@ local function OnGroupChange()
 
             local isPlayer = AreUnitsEqual(tag, localPlayer)
             local characterName = GetUnitName(tag)
-            local baseClassId = GetUnitClassId(tag)
             _existingGroupCharacters[characterName] = true
 
             if not isPlayer then
+                local baseClassId = GetUnitClassId(tag) or 0
+
                 groupStats[characterName] = groupStats[characterName] or {
                     name = characterName,
                     displayName = GetUnitDisplayName(tag),
