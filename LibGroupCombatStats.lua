@@ -1483,7 +1483,7 @@ local function lgcs_test()
     lib_debug = true
 
     lib.groupStats = groupStats
-    local instance = lib.RegisterAddon("LibGroupCombatStatsTest", {"ULT", "HPS", "DPS"})
+    local instance = lib.RegisterAddon("LibGroupCombatStatsTest", {"ULT", "HPS", "DPS", "SKILLLINES"})
     if not instance then
         Log("debug", LOG_LEVEL_ERROR, "registration of LibGroupCombatStatsTest failed")
         return
