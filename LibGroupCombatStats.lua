@@ -1138,9 +1138,6 @@ local function onPlayerActivated(_, initial)
 
     Log("debug", LOG_LEVEL_DEBUG, "onPlayerActivated called")
 
-    -- trigger group update
-    OnGroupChangeDelayed()
-
     -- register group update events
     unregisterGroupEvents()
     registerGroupEvents()
@@ -1152,6 +1149,9 @@ local function onPlayerActivated(_, initial)
     -- set player ult & sets
     updatePlayerSlottedUlts()
     updatePlayerUltActivatedSets()
+
+    -- trigger group update
+    OnGroupChangeDelayed()
 
     _isFirstOnPlayerActivated = false
 end
