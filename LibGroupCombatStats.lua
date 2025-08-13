@@ -1489,6 +1489,8 @@ local function lgcs_test()
         return
     end
 
+    --/script local i = libGroupCombatStats.RegisterAddon("HRtest", {"SKILLLINES"})
+
     local function logEvent(eventName)
         LocalEM:RegisterCallback(eventName, function(unitTag, data)
             Log("event", LOG_LEVEL_INFO, eventName, unitTag, data )
