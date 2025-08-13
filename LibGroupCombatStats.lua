@@ -45,7 +45,7 @@ _G[lib_name] = lib
 local HPS = "HPS"
 local DPS = "DPS"
 local ULT = "ULT"
-local SKILLLINES = "SKILLINES"
+local SKILLLINES = "SKILLLINES"
 
 local LGB = LibGroupBroadcast
 local EM = EVENT_MANAGER
@@ -119,7 +119,7 @@ local PLAYER_HPS_UPDATE_INTERVAL = 1000
 
 local PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY = 1000
 local PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY = 1000
-local PLAYER_SKILLINES_SEND_ON_GROUP_CHANGE_DELAY = 2500
+local PLAYER_SKILLINES_SEND_ON_GROUP_CHANGE_DELAY = 1500
 local PLAYER_ULT_VALUE_SEND_INTERVAL = 2000
 local PLAYER_DPS_SEND_INTERVAL = 2000
 local PLAYER_HPS_SEND_INTERVAL = 2000
@@ -915,6 +915,8 @@ local function unregisterPlayerStatsUpdateFunctions()
     EM:UnregisterForUpdate(lib_name .. "_hpsUpdate")
     EM:UnregisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED)
     EM:UnregisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE)
+    EM:UnregisterForEvent(lib_name .. "_SkillLinesUpdate", EVENT_SKILL_LINE_ADDED)
+
     Log("events", LOG_LEVEL_DEBUG, "playerStatsUpdate functions unregistered")
 end
 local function registerPlayerStatsUpdateFunctions()
@@ -1266,11 +1268,12 @@ local function generateSkillLineIdMaps()
         table.insert(tempSkillLines, id)
     end
 
+    table.sort(tempSkillLines)
+
     for internalID, realID in ipairs(tempSkillLines) do
         _skillLinesIdMap[realID] = internalID
         _skillLinesInternalIdMap[internalID] = realID
     end
-
 
     _skillLinesInternalIdMap[0] = 0
     _skillLinesIdMap[0] = 0
