@@ -1,3 +1,7 @@
+## 2025.08.16
+- add SkillLine sharing as an option
+- fix a bug where the ult get sent if requested even though the local player has no addon using it
+
 ## 2025.07.24
 - fix a potential bug that can occur when relogging with a different char
 
