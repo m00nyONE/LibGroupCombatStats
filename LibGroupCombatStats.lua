@@ -1035,9 +1035,15 @@ end
 local function onSyncRequestReceived()
     if not IsUnitGrouped(localPlayer) then return end
 
-    zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
-    zo_callLater(broadcastPlayerSkillLines, PLAYER_SKILLINES_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast skillLines so new members are up to date
-    zo_callLater(function() broadcastPlayerUltValue(nil, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
+    if _statsShared[ULT] then
+        zo_callLater(broadcastPlayerUltType, PLAYER_ULT_TYPE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultType so new members are up to date
+        zo_callLater(function() broadcastPlayerUltValue(nil, true) end, PLAYER_ULT_VALUE_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast ultValue so new members are up to date
+    end
+
+    if _statsShared[SKILLLINES] then
+        zo_callLater(broadcastPlayerSkillLines, PLAYER_SKILLINES_SEND_ON_GROUP_CHANGE_DELAY) -- broadcast skillLines so new members are up to date
+    end
+
 end
 
 --- receiving broadcast callbacks
