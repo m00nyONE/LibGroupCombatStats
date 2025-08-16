@@ -2,10 +2,10 @@
 ## Description: a library for sharing and receiving DPS & Ult data
 ## Version: dev
 ## Author: |c76c3f4@m00nyONE|r
-## APIVersion: 101044
+## APIVersion: 101046 101047
 ## AddOnVersion: 99999999
 ## IsLibrary: true
-## DependsOn: LibCombat>=81 LibGroupBroadcast>=88
+## DependsOn: LibCombat>=81 LibGroupBroadcast>=91
 ## OptionalDependsOn: LibDebugLogger>=180
 
 ; This Add-on is not created by, affiliated with or sponsored by ZeniMax Media Inc. or its affiliates.
