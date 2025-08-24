@@ -1,3 +1,6 @@
+## 2025.08.24
+- fix the "missing icon" bug (the question mark) that was caused trying to send skillIDs that do not exist in the lookup table.
+
 ## 2025.08.16
 - add SkillLine sharing as an option
 - fix a bug where the ult get sent if requested even though the local player has no addon using it

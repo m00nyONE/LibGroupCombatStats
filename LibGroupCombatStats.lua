@@ -49,6 +49,7 @@ local SKILLLINES = "SKILLLINES"
 
 local LGB = LibGroupBroadcast
 local EM = EVENT_MANAGER
+local SDM = SKILLS_DATA_MANAGER
 local LocalEM = ZO_CallbackObject:New()
 local strmatch = string.match
 local _isFirstOnPlayerActivated = true
@@ -809,6 +810,12 @@ function combat.GetBossTargetDamage()
     return bossUnits, totalBossDamage, bossTime
 end
 
+---
+
+local function GetBaseAbilityId(rawAbilityId)
+    if rawAbilityId == nil or rawAbilityId == 0 then return 0 end
+    return SDM:GetProgressionDataByAbilityId(rawAbilityId).abilityId
+end
 
 --- update player values
 local function updatePlayerUltValue()
@@ -859,8 +866,11 @@ local function updatePlayerSlottedUlts()
     playerStats.ult.ult2Cost = 0
 
     -- populate values
-    playerStats.ult.ult1ID = GetSlotBoundId(ACTION_BAR_ULTIMATE_SLOT_INDEX + 1, HOTBAR_CATEGORY_PRIMARY)
-    playerStats.ult.ult2ID = GetSlotBoundId(ACTION_BAR_ULTIMATE_SLOT_INDEX + 1, HOTBAR_CATEGORY_BACKUP)
+    local rawUlt1ID = GetSlotBoundId(ACTION_BAR_ULTIMATE_SLOT_INDEX + 1, HOTBAR_CATEGORY_PRIMARY)
+    local rawUlt2ID = GetSlotBoundId(ACTION_BAR_ULTIMATE_SLOT_INDEX + 1, HOTBAR_CATEGORY_BACKUP)
+
+    playerStats.ult.ult1ID = GetBaseAbilityId(rawUlt1ID)
+    playerStats.ult.ult2ID = GetBaseAbilityId(rawUlt2ID)
     playerStats.ult.ult1Cost = GetAbilityCost(playerStats.ult.ult1ID, COMBAT_MECHANIC_FLAGS_ULTIMATE, nil, localPlayer)
     playerStats.ult.ult2Cost = GetAbilityCost(playerStats.ult.ult2ID, COMBAT_MECHANIC_FLAGS_ULTIMATE, nil, localPlayer)
 
