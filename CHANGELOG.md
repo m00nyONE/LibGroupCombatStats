@@ -1,3 +1,6 @@
+## 2025.08.28
+- fix a bug that occures when having non standard ultimates equipped like cryptcannon. Thank you @code65536 for reporting the issue.
+
 ## 2025.08.24
 - fix the "missing icon" bug (the question mark) that was caused trying to send skillIDs that do not exist in the lookup table.
 

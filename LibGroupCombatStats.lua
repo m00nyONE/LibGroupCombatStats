@@ -813,8 +813,12 @@ end
 ---
 
 local function GetBaseAbilityId(rawAbilityId)
-    if rawAbilityId == nil or rawAbilityId == 0 then return 0 end
-    return SDM:GetProgressionDataByAbilityId(rawAbilityId).abilityId
+    if rawAbilityId == 0 then return 0 end
+
+    local progressionData = SDM:GetProgressionDataByAbilityId(rawAbilityId)
+    if not progressionData then return rawAbilityId end
+
+    return progressionData.abilityId
 end
 
 --- update player values
@@ -1317,6 +1321,11 @@ local function generateUltIdMaps()
                         table.insert(_tempIds, abilityId)
 
                         if abilityId == 0 then _tempIds = {} end -- if the ability Id is 0, clear all previously collected Ids from the temporary table because there is no ultimate without 2 morphs
+
+                        --if abilityId ~= 0 then
+                        --    table.insert(_tempIds, abilityId)
+                        --end
+
                     end
                     -- iterate over temporary Id table and write it to our final destination
                     for _, _abilityId in ipairs(_tempIds) do
