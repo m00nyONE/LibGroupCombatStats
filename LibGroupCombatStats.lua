@@ -160,6 +160,10 @@ local ULT_ACTIVATED_SET_LIST = {
 --- export set list, so it can be used to map the ultActivatedSetID to a real set
 lib.ULT_ACTIVATED_SET_LIST = ULT_ACTIVATED_SET_LIST
 
+local SPECIAL_ULTIMATE_ABILITY_IDS = {
+    195031, --cryptcannon
+}
+
 --- often used variables
 local PLAYER_CHARACTER_NAME = GetUnitName(localPlayer)
 local PLAYER_DISPLAY_NAME = GetUnitDisplayName(localPlayer)
@@ -942,7 +946,7 @@ local function registerPlayerStatsUpdateFunctions()
     EM:RegisterForUpdate(lib_name .. "_hpsUpdate", PLAYER_HPS_UPDATE_INTERVAL, updatePlayerHps)
     EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED, updatePlayerSlottedUlts)
     EM:AddFilterForEvent(lib_name .. "_ultTypeUpdate", EVENT_ACTION_SLOTS_ALL_HOTBARS_UPDATED, REGISTER_FILTER_POWER_TYPE, COMBAT_MECHANIC_FLAGS_ULTIMATE, REGISTER_FILTER_UNIT_TAG, localPlayer)
-    EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE, updatePlayerUltActivatedSets)
+    EM:RegisterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE, function() updatePlayerSlottedUlts() updatePlayerUltActivatedSets() end)
     EM:AddFilterForEvent(lib_name .. "_ultTypeUpdate", EVENT_INVENTORY_SINGLE_SLOT_UPDATE, REGISTER_FILTER_BAG_ID, BAG_WORN)
     EM:RegisterForEvent(lib_name .. "_SkillLinesUpdate", EVENT_SKILL_LINE_ADDED, updatePlayerSkillLines)
     Log("events", LOG_LEVEL_DEBUG, "playerStatsUpdate functions registered")
@@ -1338,6 +1342,10 @@ local function generateUltIdMaps()
 
     table.sort(tempUltimates)
 
+    for _, specialId in ipairs(SPECIAL_ULTIMATE_ABILITY_IDS) do
+        table.insert(tempUltimates, specialId)
+    end
+
     for internalID, abilityId in ipairs(tempUltimates) do
         _ultIdMap[abilityId] = internalID
         _ultInternalIdMap[internalID] = abilityId
@@ -1346,7 +1354,8 @@ local function generateUltIdMaps()
     _ultInternalIdMap[0] = 0
     _ultIdMap[0] = 0
 
-    MAX_ULT_IDS = #_ultInternalIdMap
+    MAX_ULT_IDS = #_ultInternalIdMap -- TODO: calculate the next power of 2
+    d(MAX_ULT_IDS)
 end
 
 --- Addon initialization
