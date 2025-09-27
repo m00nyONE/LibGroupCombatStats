@@ -1,3 +1,8 @@
+## 2025.09.27
+- add cryptcannon as a sharable ultimate - fixes: https://github.com/m00nyONE/LibGroupCombatStats/issues/5
+- fix a bug where the ult update did not get sent because the event for switching skills is not fired when equipping a set with ultimates
+- add dynamic MAX_ULT_IDS based on the number of ultimates in the game and special hardcoded ones like the cryptcannon to ensure that the LGB Packets will always work in the future and there is no conflict between people with newer and older versions
+
 ## 2025.08.28
 - fix a bug that occures when having non standard ultimates equipped like cryptcannon. Thank you @code65536 for reporting the issue.
 
