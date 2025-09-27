@@ -1085,7 +1085,7 @@ local function onMessageUltTypeUpdateReceived(unitTag, data)
     groupStats[charName].ult.ult2ID = _ultInternalIdMap[data.ult2ID] or 0
     groupStats[charName].ult.ult1Cost = data.ult1Cost * 2
     groupStats[charName].ult.ult2Cost = data.ult2Cost * 2
-    groupStats[charName].ult.ultActivatedSetID = data.ultActivatedSetID
+    groupStats[charName].ult.ultActivatedSetID = data.ultActivatedSetID or 0
 
     groupStats[charName].tag = unitTag
 end
