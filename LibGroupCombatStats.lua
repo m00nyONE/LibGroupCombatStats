@@ -1354,8 +1354,12 @@ local function generateUltIdMaps()
     _ultInternalIdMap[0] = 0
     _ultIdMap[0] = 0
 
-    MAX_ULT_IDS = #_ultInternalIdMap -- TODO: calculate the next power of 2
-    d(MAX_ULT_IDS)
+    -- calculate the next power of 2 for the max ultimate Ids to optimize the bit packing
+    MAX_ULT_IDS = 2
+    while((MAX_ULT_IDS - 1) < #_ultInternalIdMap) do
+        MAX_ULT_IDS = MAX_ULT_IDS * 2
+    end
+    MAX_ULT_IDS = MAX_ULT_IDS - 1
 end
 
 --- Addon initialization
@@ -1403,11 +1407,11 @@ local function declareLGBProtocols()
     local protocolUltType = handler:DeclareProtocol(MESSAGE_ID_ULTTYPE, "UltType")
     protocolUltType:AddField(CreateNumericField("ult1ID", {
         minValue = 0,
-        maxValue = 127,
+        maxValue = MAX_ULT_IDS,
     }))
     protocolUltType:AddField(CreateNumericField("ult2ID", {
         minValue = 0,
-        maxValue = 127,
+        maxValue = MAX_ULT_IDS,
     }))
     protocolUltType:AddField(CreateNumericField("ult1Cost", {
         minValue = 0,
