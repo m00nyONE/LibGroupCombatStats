@@ -1081,8 +1081,8 @@ local function onMessageUltTypeUpdateReceived(unitTag, data)
     if not groupStats[charName] then OnGroupChange() end
     if not groupStats[charName] then return end
 
-    groupStats[charName].ult.ult1ID = _ultInternalIdMap[data.ult1ID]
-    groupStats[charName].ult.ult2ID = _ultInternalIdMap[data.ult2ID]
+    groupStats[charName].ult.ult1ID = _ultInternalIdMap[data.ult1ID] or 0
+    groupStats[charName].ult.ult2ID = _ultInternalIdMap[data.ult2ID] or 0
     groupStats[charName].ult.ult1Cost = data.ult1Cost * 2
     groupStats[charName].ult.ult2Cost = data.ult2Cost * 2
     groupStats[charName].ult.ultActivatedSetID = data.ultActivatedSetID
