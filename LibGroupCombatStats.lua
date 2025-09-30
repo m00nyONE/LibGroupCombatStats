@@ -1,34 +1,6 @@
---[[
-    LibGroupCombatStats
+-- SPDX-FileCopyrightText: 2025 m00nyONE
+-- SPDX-License-Identifier: Artistic-2.0
 
-    For more details, have a look at the README.md file
-
-    Quick-Start:
-        - register your addon by calling:
-            local lgcs = LibGroupCombatStats.RegisterAddon("addonName", {"ULT", "DPS", "HPS"})
-        - use the newly created lgcs object to interact with the library either by defining callbacks or by directly querrying the library with API calls
-        - define callbacks:
-            lgcs:RegisterForEvent(EVENT_NAME, callback)
-            the following events are available:
-            - LibGroupCombatStats.EVENT_GROUP_DPS_UPDATE -- Event triggered when group DPS stats are updated
-            - LibGroupCombatStats.EVENT_GROUP_HPS_UPDATE -- Event triggered when group HPS stats are updated
-            - LibGroupCombatStats.EVENT_GROUP_ULT_UPDATE -- Event triggered when group ultimate stats are updated
-            - LibGroupCombatStats.EVENT_PLAYER_DPS_UPDATE -- Event triggered when player DPS stats are updated
-            - LibGroupCombatStats.EVENT_PLAYER_HPS_UPDATE -- Event triggered when player HPS stats are updated
-            - LibGroupCombatStats.EVENT_PLAYER_ULT_UPDATE -- Event triggered when player ultimate stats are updated
-        - use API functions:
-            lgsc:Example_API_Function()
-            the following API calls are provided:
-            - GetGroupStats() -- should only be used in rare occasions -- it returns all data of all group members as a table with characterName as the key
-            - GetGroupSize() /#lgcs -- returns the amount of the group members with data available
-            - Iterate() / pairs(lgsc) -- iterate over group members
-            - GetStatsShared() -- Returns a list of functionalities currently enabled in the library
-            - GetUnitStats(unitTag) -- Retrieves statistics for a specific unit in the group
-            - GetUnitDPS(unitTag) -- Retrieves DPS information for a specific unit in the group
-            - GetUnitHPS(unitTag) -- Retrieves HPS information for a specific unit in the group
-            - GetUnitULT(unitTag) -- Retrieves ultimate information for a specific unit in the group
-            - HasUnitUltimatesSlotted(unitTag, listOfAbilityIDs) -- Checks if the group member has specific ultimates slotted
-]]--
 --[[ doc.lua begin ]]
 --- @class LibGroupCombatStats
 local lib = {

@@ -1,3 +1,6 @@
+; SPDX-FileCopyrightText: 2025 m00nyONE
+; SPDX-License-Identifier: Artistic-2.0
+
 ## Title: LibGroupCombatStats
 ## Description: a library for sharing and receiving DPS & Ult data
 ## Version: dev

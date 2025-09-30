@@ -1,3 +1,6 @@
+-- SPDX-FileCopyrightText: 2025 m00nyONE
+-- SPDX-License-Identifier: Artistic-2.0
+
 -- ExampleAddon.lua
 local ExampleAddon = {} -- Main table for the add-on
 ExampleAddon.name = "ExampleAddon" -- Name of the add-on
