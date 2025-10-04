@@ -8,7 +8,9 @@
 ## APIVersion: 101046 101047
 ## AddOnVersion: 99999999
 ## IsLibrary: true
-## DependsOn: LibCombat>=81 LibGroupBroadcast>=91
+## DependsOn: LibGroupBroadcast>=91
+## PCDependsOn: LibCombat>=81
+## ConsoleDependsOn: LibCombat2>=1
 ## OptionalDependsOn: LibDebugLogger>=180
 
 ; This Add-on is not created by, affiliated with or sponsored by ZeniMax Media Inc. or its affiliates.

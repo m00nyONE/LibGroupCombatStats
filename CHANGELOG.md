@@ -1,3 +1,6 @@
+## 2025.10.04
+- add console support
+
 ## 2025.09.27
 - add cryptcannon as a sharable ultimate - fixes: https://github.com/m00nyONE/LibGroupCombatStats/issues/5
 - fix a bug where the ult update did not get sent because the event for switching skills is not fired when equipping a set with ultimates
