@@ -706,23 +706,14 @@ local combatData = {
     dpstime = 0,
     hpstime = 0,
     bossfight = false,
-    bossDamageTotal = 0,
-    damageOutTotal =  0,
-    bossTime = 0
+    units = {}
 }
 
 function combat.InitData()
-    combatData = {
-        DPSOut = 0,
-        HPSOut = 0,
-        OHPSOut = 0,
-        dpstime = 0,
-        hpstime = 0,
-        bossfight = false,
-        bossDamageTotal = 0,
-        damageOutTotal =  0,
-        bossTime = 0
-    }
+    combatData = {DPSOut = 0, HPSOut = 0, OHPSOut = 0, dpstime = 0, hpstime = 0, bossfight = false, units = {}}
+end
+function combat.UnitsCallback(_, units)
+    combatData.units = units
 end
 function combat.FightRecapCallback(_, data)
     combatData.DPSOut = data.DPSOut or 0
@@ -731,14 +722,12 @@ function combat.FightRecapCallback(_, data)
     combatData.dpstime = data.dpstime or 0
     combatData.hpstime = data.hpstime or 0
     combatData.bossfight = data.bossfight or false
-    combatData.bossDamageTotal = data.bossDamageTotal or 0
-    combatData.damageOutTotal = data.damageOutTotal or 0
-    combatData.bossTime = data.bossTime or 0
 end
 function combat.Register()
 
     combat.InitData()
 
+    LC:RegisterCallbackType(LIBCOMBAT_EVENT_UNITS, combat.UnitsCallback, LIBCOMBAT_CALLBACK_NAME)
     LC:RegisterCallbackType(LIBCOMBAT_EVENT_FIGHTRECAP, combat.FightRecapCallback, LIBCOMBAT_CALLBACK_NAME)
     Log("events", LOG_LEVEL_DEBUG, "registered to LibCombat")
 
@@ -747,6 +736,7 @@ function combat.Unregister()
 
     combat.InitData()
 
+    LC:UnregisterCallbackType(LIBCOMBAT_EVENT_UNITS, combat.UnitsCallback, LIBCOMBAT_CALLBACK_NAME)
     LC:UnregisterCallbackType(LIBCOMBAT_EVENT_FIGHTRECAP, combat.FightRecapCallback, LIBCOMBAT_CALLBACK_NAME)
     Log("events", LOG_LEVEL_DEBUG, "unregistered from LibCombat")
 
@@ -760,6 +750,42 @@ end
 function combat.GetCombatTime()
     return zo_roundToNearest(zo_max(combatData.dpstime, combatData.hpstime), 0.1)
 end
+-- Returns total damage done to all enemy units in the current fight.
+function combat.GetFullDamage()
+    local damage = 0
+    for _, unit in pairs(combatData.units) do
+        local totalUnitDamage = unit.damageOutTotal
+        if not unit.isFriendly and totalUnitDamage > 0 then
+            damage = damage + totalUnitDamage
+        end
+    end
+    return damage
+end
+-- Returns total damage done to all bosses in the current fight.
+function combat.GetBossTargetDamage()
+    if not combatData.bossfight then return 0, 0, 0 end
+
+    local bossUnits, totalBossDamage = 0, 0
+    local starttime, endtime
+
+    for _, unit in pairs(combatData.units) do
+        local totalUnitDamage = unit.damageOutTotal
+        if unit.bossId ~= nil and totalUnitDamage > 0 then
+            totalBossDamage = totalBossDamage + totalUnitDamage
+            bossUnits = bossUnits + 1
+            starttime = zo_min(starttime or unit.dpsstart or 0, unit.dpsstart or 0)
+            endtime = zo_max(endtime or unit.dpsend or 0, unit.dpsend or 0)
+        end
+    end
+
+    if bossUnits == 0 then return 0, 0, 0 end
+
+    local bossTime = (endtime - starttime) / 1000
+    bossTime = bossTime > 0 and bossTime or combatData.dpstime
+
+    return bossUnits, totalBossDamage, bossTime
+end
+
 ---
 
 local function GetBaseAbilityId(rawAbilityId)
@@ -786,10 +812,11 @@ local function updatePlayerDps()
     if data.DPSOut == 0 then
         dmgType, dmg, dps = DAMAGE_UNKNOWN, 0, 0
     else
-        if data.bossfight then
-            dmgType, dmg, dps = DAMAGE_BOSS, zo_floor(data.bossDamageTotal / data.bossTime / 100), zo_floor(data.DPSOut / 1000)
+        local bossUnits, bossDamage, bossTime = combat.GetBossTargetDamage()
+        if bossUnits > 0 then
+            dmgType, dmg, dps = DAMAGE_BOSS, zo_floor(bossDamage / bossTime / 100), zo_floor(data.DPSOut / 1000)
         else
-            dmgType, dmg, dps = DAMAGE_TOTAL, zo_floor(data.damageOutTotal / 10000), zo_floor(data.DPSOut / 1000)
+            dmgType, dmg, dps = DAMAGE_TOTAL, zo_floor(combat.GetFullDamage() / 10000), zo_floor(data.DPSOut / 1000)
         end
     end
 
