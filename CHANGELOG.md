@@ -1,3 +1,6 @@
+## 2025.10.08
+- revert recent changes because they cause that the dpsType cannot be detected correctly anymore. Will rework this in the future.
+
 ## 2025.10.04
 - add console support
 
