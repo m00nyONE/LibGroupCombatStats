@@ -1345,7 +1345,7 @@ local function declareLGBProtocols()
     local protocolOptions = {
         isRelevantInCombat = true
     }
-    local handler = LGB:RegisterHandler("LibGroupCombatStats")
+    local handler = LGB:RegisterHandler(lib.name)
     handler:SetDisplayName("Group Combat Stats")
     handler:SetDescription("Shares combat related data with group members.")
 
