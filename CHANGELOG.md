@@ -1,5 +1,11 @@
+## 2025.10.11
+- readd console support
+- bump LibCombat>=83
+- bump LibCombat2>=8 (console)
+
 ## 2025.10.08
-- revert recent changes because they cause that the dpsType cannot be detected correctly anymore. Will rework this in the future.
+- remove console support until LibCombat>=83 is released
+- fix variable naming
 
 ## 2025.10.04
 - add console support

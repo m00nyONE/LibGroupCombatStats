@@ -694,7 +694,6 @@ local function OnGroupChange()
     end
 end
 
---- Combat extension ( stolen from HodorReflexes - thanks andy.s <3 )
 local LC = LibCombat
 local combat = {}
 local LIBCOMBAT_CALLBACK_NAME = lib_name .. "_Combat"
@@ -705,7 +704,7 @@ local combatData = {
     OHPSOut = 0,
     dpstime = 0,
     hpstime = 0,
-    bossfight = false,
+    bossFight = false,
     bossDamageTotal = 0,
     damageOutTotal =  0,
     bossTime = 0
@@ -718,7 +717,7 @@ function combat.InitData()
         OHPSOut = 0,
         dpstime = 0,
         hpstime = 0,
-        bossfight = false,
+        bossFight = false,
         bossDamageTotal = 0,
         damageOutTotal =  0,
         bossTime = 0
@@ -730,7 +729,7 @@ function combat.FightRecapCallback(_, data)
     combatData.OHPSOut = data.OHPSOut or 0
     combatData.dpstime = data.dpstime or 0
     combatData.hpstime = data.hpstime or 0
-    combatData.bossfight = data.bossfight or false
+    combatData.bossFight = data.bossFight or false
     combatData.bossDamageTotal = data.bossDamageTotal or 0
     combatData.damageOutTotal = data.damageOutTotal or 0
     combatData.bossTime = data.bossTime or 0
@@ -786,7 +785,7 @@ local function updatePlayerDps()
     if data.DPSOut == 0 then
         dmgType, dmg, dps = DAMAGE_UNKNOWN, 0, 0
     else
-        if data.bossfight then
+        if data.bossFight then
             dmgType, dmg, dps = DAMAGE_BOSS, zo_floor(data.bossDamageTotal / data.bossTime / 100), zo_floor(data.DPSOut / 1000)
         else
             dmgType, dmg, dps = DAMAGE_TOTAL, zo_floor(data.damageOutTotal / 10000), zo_floor(data.DPSOut / 1000)
