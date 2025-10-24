@@ -1,0 +1,9 @@
+.git
+.github
+.gitignore
+.build-ignore
+README_ESOUI.txt
+README_CONSOLE.txt
+docs-lua
+docs-md
+TODO.md
