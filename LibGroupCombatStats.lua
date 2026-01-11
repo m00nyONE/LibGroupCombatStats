@@ -50,9 +50,7 @@ local LOG_LEVEL_INFO = "I"
 local LOG_LEVEL_DEBUG = "D"
 local LOG_LEVEL_VERBOSE = "V"
 
-if LibDebugLogger then
-    if IsConsoleUI() then return end
-
+if LibDebugLogger and (IsConsoleUI() == false) then
     mainLogger = LibDebugLogger.Create(lib_name)
 
     LOG_LEVEL_ERROR = LibDebugLogger.LOG_LEVEL_ERROR
