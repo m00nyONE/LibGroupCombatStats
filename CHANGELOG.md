@@ -1,7 +1,5 @@
-## 2026.01.12
-- fix console crash - thanks @M0RGaming for fixing it
-
 ## 2026.01.11
+- fix console crash - thanks @M0RGaming for fixing it
 - disable logging to LibDebugLogger on Console
 
 ## 2025.10.11
