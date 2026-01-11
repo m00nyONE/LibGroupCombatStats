@@ -1,5 +1,8 @@
+## 2026.01.11
+- disable logging to LibDebugLogger on Console
+
 ## 2025.10.11
-- readd console support
+- re-add console support
 - bump LibCombat>=83
 - bump LibCombat2>=8 (console)
 
