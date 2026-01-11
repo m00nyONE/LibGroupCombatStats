@@ -26,6 +26,15 @@ jobs:
       - name: get repo name
         run: echo "REPO_NAME=${{ github.event.repository.name }}" >> $GITHUB_ENV
 
+      - name: Get current year, month and day
+        run: |
+          echo "BUILD_DATE_YEAR=$(date -u +'%Y')" >> $GITHUB_ENV
+          echo "BUILD_DATE_MONTH=$(date -u +'%m')" >> $GITHUB_ENV
+          echo "BUILD_DATE_DAY=$(date -u +'%d')" >> $GITHUB_ENV
+          echo "BUILD_DATE_NUMBER=$(date +'%Y%m%d')" >> $GITHUB_ENV
+          echo "BUILD_DATE_WITH_DOT=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
+          echo "BUILD_DATE_WITH_HYPHEN=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
       - name: Create env variables
         run: |
           addon_name="${{ env.REPO_NAME }}"
@@ -35,15 +44,6 @@ jobs:
           echo "ADDON_VERSION=$version" >> $GITHUB_ENV
           
           echo "ZIP_FULL_NAME=${addon_name}-${version}.zip" >> $GITHUB_ENV
-
-      - name: Get current year, month and day
-        run: |
-          echo "BUILD_DATE_YEAR=$(date -u +'%Y')" >> $GITHUB_ENV
-          echo "BUILD_DATE_MONTH=$(date -u +'%m')" >> $GITHUB_ENV
-          echo "BUILD_DATE_DAY=$(date -u +'%d')" >> $GITHUB_ENV
-          echo "BUILD_DATE_NUMBER=$(date +'%Y%m%d')" >> $GITHUB_ENV
-          echo "BUILD_DATE_WITH_DOT=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
-          echo "BUILD_DATE_WITH_HYPHEN=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Replace placeholders with current date
         run: |
