@@ -1268,7 +1268,7 @@ local function generateUltIdMaps()
                         local abilityId, _ = GetSpecificSkillAbilityInfo(skillType, skillLineIndex, skillIndex, morph, 0)
                         table.insert(_tempIds, abilityId)
 
-                        if abilityId == 0 then _tempIds = {} end -- if the ability Id is 0, clear all previously collected Ids from the temporary table because there is no ultimate without 2 morphs
+                       -- if abilityId == 0 then _tempIds = {} end -- if the ability Id is 0, clear all previously collected Ids from the temporary table because there is no ultimate without 2 morphs
 
                         --if abilityId ~= 0 then
                         --    table.insert(_tempIds, abilityId)
