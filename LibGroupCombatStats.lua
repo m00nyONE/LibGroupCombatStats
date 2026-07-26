@@ -1266,10 +1266,12 @@ local function generateUltIdMaps()
                     local _tempIds = {} -- create temporary table for all sill Ids of each morph
                     for morph = 0, 2 do -- there is only 1 base rank and 2 morphs
                         local abilityId, _ = GetSpecificSkillAbilityInfo(skillType, skillLineIndex, skillIndex, morph, 0)
-                        table.insert(_tempIds, abilityId)
+                        -- check if ID is not zero
+                        if abilityId ~= 0 then
+                            table.insert(_tempIds, abilityId)
+                        end
 
                        -- if abilityId == 0 then _tempIds = {} end -- if the ability Id is 0, clear all previously collected Ids from the temporary table because there is no ultimate without 2 morphs
-
                         --if abilityId ~= 0 then
                         --    table.insert(_tempIds, abilityId)
                         --end
@@ -1442,8 +1444,8 @@ EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
     EM:UnregisterForEvent(lib_name, EVENT_ADD_ON_LOADED)
 
     generateUltIdMaps()
-    --lib._ultInternalIdMap = _ultInternalIdMap
-    --lib._ultIdMap = _ultIdMap
+    lib._ultInternalIdMap = _ultInternalIdMap
+    lib._ultIdMap = _ultIdMap
     generateSkillLineIdMaps()
     --lib._skillLinesInternalIdMap = _skillLinesInternalIdMap
     --lib._skillLinesIdMap = _skillLinesIdMap
