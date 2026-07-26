@@ -1,3 +1,7 @@
+## 2026.07.26
+- BREAKING CHANGE! Update ASAP and tell your friends to update too - otherwise there will be an ID missmatch!
+- adding support for vengeance ultimates - thanks to @Masteroshi430
+
 ## 2026.01.11
 - fix console crash - thanks @M0RGaming for fixing it
 - disable logging to LibDebugLogger on Console
