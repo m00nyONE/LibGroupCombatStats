@@ -1444,8 +1444,8 @@ EM:RegisterForEvent(lib_name, EVENT_ADD_ON_LOADED, function(_, name)
     EM:UnregisterForEvent(lib_name, EVENT_ADD_ON_LOADED)
 
     generateUltIdMaps()
-    lib._ultInternalIdMap = _ultInternalIdMap
-    lib._ultIdMap = _ultIdMap
+    --lib._ultInternalIdMap = _ultInternalIdMap
+    --lib._ultIdMap = _ultIdMap
     generateSkillLineIdMaps()
     --lib._skillLinesInternalIdMap = _skillLinesInternalIdMap
     --lib._skillLinesIdMap = _skillLinesIdMap
