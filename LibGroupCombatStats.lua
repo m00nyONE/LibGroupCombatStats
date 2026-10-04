@@ -349,6 +349,18 @@ local groupStats = {
     }
 }
 local playerStats = groupStats[PLAYER_CHARACTER_NAME] -- local alias for the stats of the player
+--- UpdatePlayerCharacterName updates the playerName in the groupStats table and ensures that the old name is removed if it exists. It also updates the PLAYER_CHARACTER_NAME variable and the playerStats reference.
+local function UpdatePlayerCharacterName(characterName)
+    local oldName = playerStats.name
+
+    if oldName ~= characterName and groupStats[oldName] == playerStats then
+        groupStats[oldName] = nil
+    end
+
+    PLAYER_CHARACTER_NAME = characterName
+    playerStats.name = characterName
+    groupStats[characterName] = playerStats
+end
 
 --[[ doc.lua begin ]]
 
@@ -633,7 +645,9 @@ local function OnGroupChange()
             local characterName = GetUnitName(tag)
             _existingGroupCharacters[characterName] = true
 
-            if not isPlayer then
+            if isPlayer then
+                UpdatePlayerCharacterName(characterName)
+            else
                 local baseClassId = GetUnitClassId(tag) or 0
 
                 groupStats[characterName] = groupStats[characterName] or {
@@ -676,8 +690,6 @@ local function OnGroupChange()
                         third = baseClassId,
                     }),
                 }
-
-
             end
             groupStats[characterName].tag = tag
             --groupStats[characterName].isOnline = IsUnitOnline(tag)
@@ -1311,7 +1323,7 @@ end
 --- Addon initialization
 local function onPlayerActivated(_, initial)
     -- set the player character name again to ensure that after swapping a character it gets updated
-    PLAYER_CHARACTER_NAME = GetUnitName(localPlayer)
+    UpdatePlayerCharacterName(GetUnitName(localPlayer))
     PLAYER_BASE_CLASS = GetUnitClassId(localPlayer)
 
    -- check if it's the first call of onPlayerActivated - for example after logging in or after a reloadui

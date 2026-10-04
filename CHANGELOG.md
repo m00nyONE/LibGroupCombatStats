@@ -1,3 +1,6 @@
+## 2026.10.04
+- fixing a bug that triggers a nil pointer exception when swapping characters
+
 ## 2026.07.26
 - BREAKING CHANGE! Update ASAP and tell your friends to update too - otherwise there will be an ID missmatch!
 - adding support for vengeance ultimates - thanks to @Masteroshi430
